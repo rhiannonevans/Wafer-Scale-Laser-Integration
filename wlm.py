@@ -145,7 +145,6 @@ def process_other(file_path_str, LDC, output_folder=None):
             ax.set_xlabel("Current (A)")
             ax.set_ylabel("Power (dBm)")
             ax.grid(True)
-            plt.show()
 
             # Save the channel plot as an SVG file in the output folder
             svg_filename = base_name + f"_LI_channel{i}.svg"
@@ -176,7 +175,6 @@ def process_other(file_path_str, LDC, output_folder=None):
         ivax.set_yticks(v_ticks_IV)
         ivax.set_yticklabels(v_ticks_IV)
         ivax.grid(True)
-        plt.show()
 
         # Save the IV plot as an SVG file in the output folder
         iv_filename = base_name + "_IV.svg"

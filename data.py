@@ -7,43 +7,59 @@ from tkinter.filedialog import askdirectory, askopenfilename
 # Define the size threshold for processing as OSA (50 KB)
 SIZE_THRESHOLD = 50 * 1024
 
-def create_output_folder(file_path):
+def create_output_folder(file_path, base_folder=None):
     """
-    Create an output folder in the same directory as the original file.
-    The folder is named after the original file (without extension).
+    Determine the output folder for a processed file.
+    
+    - In folder mode (base_folder provided):
+      * If the file is directly in the selected folder (i.e. its parent equals base_folder),
+        create a new folder named after the file (without extension) in that folder.
+      * If the file is in a subfolder of the selected folder, simply return the file's directory.
+    
+    - In file mode (base_folder is None):
+      * Always create a new folder (named after the file) in its directory.
     """
     directory = os.path.dirname(file_path)
     base_name = os.path.splitext(os.path.basename(file_path))[0]
-    output_folder = os.path.join(directory, base_name)
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    return output_folder
+    if base_folder is not None:
+        # Compare normalized paths to avoid issues with trailing slashes
+        if os.path.normpath(directory) == os.path.normpath(base_folder):
+            # File is in the top-level folder; create a subfolder.
+            output_folder = os.path.join(directory, base_name)
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+            return output_folder
+        else:
+            # File is in a subfolder; save outputs directly in that subfolder.
+            return directory
+    else:
+        # File mode: always create a new folder in the file's directory.
+        output_folder = os.path.join(directory, base_name)
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+        return output_folder
 
-def process_file(file_path, process_mode):
+def process_file(file_path, process_mode, base_folder=None):
     """
-    Process a single CSV file based on the process_mode:
-      - "osa": process only files that qualify as OSA
-      - "wlm": process only files that qualify as WLM
-      - "both": process each file according to its qualification
-
-    A file qualifies for OSA processing if its name (case-insensitive)
-    contains "osa" or if its size exceeds SIZE_THRESHOLD.
+    Process a single CSV file according to process_mode:
+      - "osa": Process only if the file qualifies as OSA.
+      - "wlm": Process only if the file qualifies as WLM.
+      - "both": Process according to the file's qualification.
     
-    Any output is saved in a new folder (created by create_output_folder)
-    located in the same folder as the original file.
+    A file qualifies for OSA if its name (case-insensitive) contains "osa"
+    or its size exceeds SIZE_THRESHOLD.
+    
+    Outputs are saved to an output folder determined by create_output_folder.
     """
     file_name = os.path.basename(file_path)
     file_size = os.path.getsize(file_path)
-    # Determine if file qualifies for OSA processing
     osa_condition = "osa" in file_name.lower() or file_size > SIZE_THRESHOLD
-    output_folder = create_output_folder(file_path)
-    processed = False
+    output_folder = create_output_folder(file_path, base_folder)
 
     if process_mode == "osa":
         if osa_condition:
             print(f"Processing {file_path} with OSA")
             osa.sweep_osa(file_path, output_folder=output_folder)
-            processed = True
         else:
             print(f"Skipping {file_path}: does not meet OSA criteria.")
             
@@ -51,7 +67,6 @@ def process_file(file_path, process_mode):
         if not osa_condition:
             print(f"Processing {file_path} with WLM")
             wlm.process_other(file_path, True, output_folder=output_folder)
-            processed = True
         else:
             print(f"Skipping {file_path}: qualifies as OSA, not WLM.")
             
@@ -62,15 +77,13 @@ def process_file(file_path, process_mode):
         else:
             print(f"Processing {file_path} with WLM (both mode)")
             wlm.process_other(file_path, True, output_folder=output_folder)
-        processed = True
     else:
-        print("Invalid process mode specified.")
-    
-    if processed:
-        print(f"Output for {file_path} saved in {output_folder}")
+        raise ValueError("Invalid processing mode specified.")
+
+    print(f"Output for {file_path} saved in {output_folder}")
 
 def main():
-    # Initialize Tkinter and hide the main window
+    # Initialize Tkinter and hide the root window.
     root = Tk()
     root.withdraw()
 
@@ -83,14 +96,14 @@ def main():
             return
         
         if selection_choice.strip() == '1':
-            # Folder selection mode
+            # Folder selection mode.
             print("Folder selection mode")
             folder_path = askdirectory(title="Select a Folder Containing the CSV Files")
             if not folder_path:
                 print("No folder selected. Exiting.")
                 return
             
-            # Prompt the user for which type(s) of files to process
+            # Ask for processing type.
             processing_choice = simpledialog.askstring("Processing Mode", 
                                         "Select processing mode for folder:\n"
                                         "(1) OSA files only\n"
@@ -112,28 +125,37 @@ def main():
                 return
 
             print(f"Selected folder: {folder_path}")
-            # Process each CSV file in the selected folder
-            for file_name in os.listdir(folder_path):
-                if file_name.endswith(".csv"):
-                    file_path = os.path.join(folder_path, file_name)
-                    process_file(file_path, process_mode)
-                    
+            # Recursively process every CSV file in the folder and its subfolders.
+            for current_root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    if file.endswith(".csv"):
+                        file_path = os.path.join(current_root, file)
+                        try:
+                            process_file(file_path, process_mode, base_folder=folder_path)
+                        except Exception as e:
+                            # Print the full file name and a summary of the error, then continue.
+                            print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
+                        
         elif selection_choice.strip() == '2':
-            # File selection mode
+            # File selection mode.
             print("File selection mode")
             file_path = askopenfilename(title="Select a CSV File", filetypes=[("CSV Files", "*.csv")])
             if not file_path:
                 print("No file selected. Exiting.")
                 return
             print(f"Selected file: {file_path}")
-            # Automatically decide processing based on file criteria
-            file_name = os.path.basename(file_path)
-            file_size = os.path.getsize(file_path)
-            if "osa" in file_name.lower() or file_size > SIZE_THRESHOLD:
-                process_mode = "osa"
-            else:
-                process_mode = "wlm"
-            process_file(file_path, process_mode)
+            try:
+                file_name = os.path.basename(file_path)
+                file_size = os.path.getsize(file_path)
+                # Automatically choose processing based on file criteria.
+                if "osa" in file_name.lower() or file_size > SIZE_THRESHOLD:
+                    process_mode = "osa"
+                else:
+                    process_mode = "wlm"
+                # For file mode, base_folder is left as None.
+                process_file(file_path, process_mode, base_folder=None)
+            except Exception as e:
+                print(f"Failed processing file: {file_path}\nReason: {str(e)}")
             
         else:
             print("Invalid selection mode. Exiting.")
