@@ -81,6 +81,10 @@ def process_other(file_path_str, LDC, output_folder=None):
     for i, ch in enumerate(channels):
         if ch is not None:
             data_dict[f"channel{i}"] = ch
+            tidx = next(idx for idx, value in enumerate(ch) if value > 10**(-20))+1
+    
+    print("Threshold current:", current[tidx])
+    data_dict["threhold_current"] = current[tidx]
 
     # Determine the output directory
     if output_folder is not None:
