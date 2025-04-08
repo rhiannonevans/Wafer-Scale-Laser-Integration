@@ -61,6 +61,8 @@ def sweep_osa(file_path_str, output_folder=None):
     temperatures = ["Temperature (C)"]
     curr = df[df[0].isin(currents)].reset_index(drop=True)
     temp = df[df[0].isin(temperatures)].reset_index(drop=True)
+     # Convert current from A to mA
+    curr[1] = curr[1].astype(float) * 1000 
     
     # Ensure that the lengths match
     if len(curr) != len(temp):
@@ -69,17 +71,18 @@ def sweep_osa(file_path_str, output_folder=None):
     # Combine current and temperature data into one DataFrame
     conditions = pd.DataFrame({
         "Sweep": range(len(curr)),
-        "Current (A)": curr[1].values,
+        "Current (mA)": curr[1].values,
         "Temperature (C)": temp[1].values
     })
+    
     
     # Merge pivot data with conditions based on "Sweep"
     df2_merged = pivot_df.merge(conditions, on="Sweep")
     df2_merged.set_index("Sweep", inplace=True)
     
     # Rename and reorder columns for clarity
-    df2_merged.columns = ["Optical Power (dBm)", "Wavelength (nm)", "Current (A)", "Temperature (C)"]
-    df2_merged = df2_merged[["Current (A)", "Temperature (C)", "Optical Power (dBm)", "Wavelength (nm)"]]
+    df2_merged.columns = ["Optical Power (dBm)", "Wavelength (nm)", "Current (mA)", "Temperature (C)"]
+    df2_merged = df2_merged[["Current (mA)", "Temperature (C)", "Optical Power (dBm)", "Wavelength (nm)"]]
     
     OSA_df = df2_merged
     print(OSA_df)
@@ -103,7 +106,7 @@ def sweep_osa(file_path_str, output_folder=None):
         power_values = pivot_df.loc[sweep, "Optical power (dBm)"]
 
         temperature = OSA_df.loc[sweep, 'Temperature (C)']
-        current = OSA_df.loc[sweep, 'Current (A)']
+        current = OSA_df.loc[sweep, 'Current (mA)']
 
         max_power = max(power_values)
         peak_pows[sweep] = max_power
@@ -121,17 +124,17 @@ def sweep_osa(file_path_str, output_folder=None):
     ax1.set_title("Wavelength vs Optical Power by Sweep")
     ax1.set_xlabel("Wavelength (nm)")
     ax1.set_ylabel("Optical Power (dBm)")
-    ax1.legend(title="Sweep / Current (A) / Temperature (C)", loc='center left', bbox_to_anchor=(1, 0.5))
+    ax1.legend(title="Sweep / Current (mA) / Temperature (C)", loc='upper right', bbox_to_anchor=(1, 0.5))
     ax1.grid(True)
     fig1.tight_layout()
     
     ax2.set_title("Peak Power and Assoc. Wavelength by Sweep")
     ax2.set_xlabel("Wavelength (nm)")
     ax2.set_ylabel("Power (dBm)")
-    ax2.legend(title="Sweep / Current (A)", loc='center left', bbox_to_anchor=(1, 0.5))
+    ax2.legend(title="Sweep / Current (mA)", loc='upper right', bbox_to_anchor=(1, 0.5))
     
     ax3.set_title("Peak Power and Assoc. Current by Sweep")
-    ax3.set_xlabel("Current (A)")
+    ax3.set_xlabel("Current (mA)")
     ax3.set_ylabel("Power (dBm)")
     ax3.legend(title="Sweep", loc='center left', bbox_to_anchor=(1, 0.5))
     fig3.tight_layout()
@@ -143,6 +146,10 @@ def sweep_osa(file_path_str, output_folder=None):
     nameSVG1 = base_name + "_spectrum.svg"
     nameSVG2 = base_name + "_WLpeaks.svg"
     nameSVG3 = base_name + "_Ipeaks.svg"
+
+    namePNG1 = base_name + "_spectrum.png"
+    namePNG2 = base_name + "_WLpeaks.png"
+    namePNG3 = base_name + "_Ipeaks.png"
 
     # Use the provided output_folder if available; otherwise, default to the file's directory
     if output_folder is not None:
@@ -158,10 +165,17 @@ def sweep_osa(file_path_str, output_folder=None):
     save_path_svg2 = os.path.join(save_dir, nameSVG2)
     save_path_svg3 = os.path.join(save_dir, nameSVG3)
     save_path_mat = os.path.join(save_dir, nameMat)
+    save_path_png1 = os.path.join(save_dir, namePNG1)
+    save_path_png2 = os.path.join(save_dir, namePNG2)
+    save_path_png3 = os.path.join(save_dir, namePNG3)
 
     fig1.savefig(save_path_svg1, bbox_inches="tight")
     fig2.savefig(save_path_svg2, bbox_inches="tight")
     fig3.savefig(save_path_svg3, bbox_inches="tight")
+
+    fig1.savefig(save_path_png1, bbox_inches="tight")
+    fig2.savefig(save_path_png2, bbox_inches="tight")
+    fig3.savefig(save_path_png3, bbox_inches="tight")
 
     d_OSA = {
         "peak_power": peak_pows,

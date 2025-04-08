@@ -50,6 +50,11 @@ def process_other(file_path_str, LDC, output_folder=None):
 
     # Extract data rows from the DataFrame
     current = df.loc[indices["current"]] if indices["current"] is not None else None
+    if indices["current"] is not None:
+     current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
+    else:
+     current = None
+
     wavelength = df.loc[indices["wavelength"]] if indices["wavelength"] is not None else None
     voltage = df.loc[indices["voltage"]] if indices["voltage"] is not None else None
     temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
@@ -115,7 +120,7 @@ def process_other(file_path_str, LDC, output_folder=None):
     valid_channels = []
     for i, ch in enumerate(channels):
         if ch is not None:
-            print(f"Found power (dBm) data for Channel {i}")
+            print(f"Found power (mW) data for Channel {i}")
             if noisy(ch.mean(), noise_threshold):
                 print(f"Channel {i} classified as noise, skipping.")
             else:
@@ -140,14 +145,14 @@ def process_other(file_path_str, LDC, output_folder=None):
             i_ticks = get_ticks(fcurrent, 4, 3)
 
             fig, ax = plt.subplots()
-            ax.plot(fcurrent, proc_ch, color=colours[idx], marker='o', label=f"Channel {i}")
-            ax.set_xticks(i_ticks)
-            ax.set_xticklabels(i_ticks)
-            ax.set_yticks(ch_ticks)
-            ax.set_yticklabels(ch_ticks)
+            ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
+            #ax.set_xticks(i_ticks)
+            #ax.set_xticklabels(i_ticks)
+            #ax.set_yticks(ch_ticks)
+            #ax.set_yticklabels(ch_ticks)
             ax.set_title(f"Current vs Power - Channel {i}")
-            ax.set_xlabel("Current (A)")
-            ax.set_ylabel("Power (dBm)")
+            ax.set_xlabel("Current (mA)")
+            ax.set_ylabel("Power (mW)")
             ax.grid(True)
 
             # Save the channel plot as an SVG file in the output folder
@@ -156,6 +161,11 @@ def process_other(file_path_str, LDC, output_folder=None):
             fig.savefig(save_path_svg, format="svg", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_svg}")
             # Optionally, close the figure: plt.close(fig)
+            # Save the channel plot as an PNG file in the output folder
+            png_filename = base_name + f"_LI_channel{i}.png"
+            save_path_png = os.path.join(save_dir, png_filename)
+            fig.savefig(save_path_png, format="png", bbox_inches="tight")
+            print(f"Saved channel {i} plot to {save_path_png}")
 
     # Create and save the current vs voltage (IV) plot
     if current is not None and voltage is not None:
@@ -170,9 +180,9 @@ def process_other(file_path_str, LDC, output_folder=None):
         v_ticks_IV = get_ticks(fvoltage_IV, 4, 2)
 
         ivfig, ivax = plt.subplots()
-        ivax.plot(fcurrent_IV, fvoltage_IV, color='blue', marker='o')
+        ivax.plot(fcurrent_IV, fvoltage_IV, color='black', marker='o')
         ivax.set_title("IV Curve")
-        ivax.set_xlabel("Current (A)")
+        ivax.set_xlabel("Current (mA)")
         ivax.set_ylabel("Voltage (V)")
         ivax.set_xticks(i_ticks_IV)
         ivax.set_xticklabels(i_ticks_IV)
@@ -186,3 +196,12 @@ def process_other(file_path_str, LDC, output_folder=None):
         ivfig.savefig(save_path_iv, format="svg", bbox_inches="tight")
         print(f"Saved IV plot to {save_path_iv}")
         # Optionally, close the figure: plt.close(ivfig)
+
+        
+        # Save the IV plot as an SVG file in the output folder
+        iv_filename1 = base_name + "_IV.png"
+        save_path_iv = os.path.join(save_dir, iv_filename1)
+        ivfig.savefig(save_path_iv, format="png", bbox_inches="tight")
+        print(f"Saved IV plot to {save_path_iv}")
+        # Optionally, close the figure: plt.close(ivfig)
+
