@@ -184,11 +184,11 @@ def process_other(file_path_str, LDC, output_folder=None):
         ivax.set_title("IV Curve")
         ivax.set_xlabel("Current (mA)")
         ivax.set_ylabel("Voltage (V)")
-        ivax.set_xticks(i_ticks_IV)
-        ivax.set_xticklabels(i_ticks_IV)
-        ivax.set_yticks(v_ticks_IV)
-        ivax.set_yticklabels(v_ticks_IV)
-        ivax.grid(True)
+       # ivax.set_xticks(i_ticks_IV)
+        #ivax.set_xticklabels(i_ticks_IV)
+        #ivax.set_yticks(v_ticks_IV)
+        #ivax.set_yticklabels(v_ticks_IV)
+        #ivax.grid(True)
 
         # Save the IV plot as an SVG file in the output folder
         iv_filename = base_name + "_IV.svg"
