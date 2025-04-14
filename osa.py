@@ -91,7 +91,7 @@ def sweep_osa(file_path_str, output_folder=None):
     PLOT SORTED DATA
     """
     cmap = mpl.colormaps['inferno']
-    colors = cmap(np.linspace(0, 1, int(num_sweeps)))
+    colors = cmap(np.linspace(0.2, 0.9, int(num_sweeps)))  # Adjust range to exclude very light colors
     
     fig1, ax1 = plt.subplots()  # Spectrum figure
     fig2, ax2 = plt.subplots()  # Peak power vs wavelength
@@ -163,7 +163,7 @@ def sweep_osa(file_path_str, output_folder=None):
     ax1.grid(True)
     fig1.tight_layout()
     
-    ax2.set_title("Peak Power and Assoc. Wavelength by Sweep")
+    ax2.set_title("Associated Wavelength at Peak Power by Sweep")
     ax2.set_xlabel("Current (mA)")
     ax2.set_ylabel("Wavelength (nm)")
     ax2.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
