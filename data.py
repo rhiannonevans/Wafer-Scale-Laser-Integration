@@ -66,7 +66,7 @@ def process_file(file_path, process_mode, base_folder=None):
     elif process_mode == "wlm":
         if not osa_condition:
             print(f"Processing {file_path} with WLM")
-            wlm.process_other(file_path, True, output_folder=output_folder)
+            wlm.process_other(file_path, output_folder=output_folder)
         else:
             print(f"Skipping {file_path}: qualifies as OSA, not WLM.")
             
@@ -76,7 +76,7 @@ def process_file(file_path, process_mode, base_folder=None):
             osa.sweep_osa(file_path, output_folder=output_folder)
         else:
             print(f"Processing {file_path} with WLM (both mode)")
-            wlm.process_other(file_path, True, output_folder=output_folder)
+            wlm.process_other(file_path, output_folder=output_folder)
     else:
         raise ValueError("Invalid processing mode specified.")
 

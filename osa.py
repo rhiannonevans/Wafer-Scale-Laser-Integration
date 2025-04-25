@@ -122,6 +122,32 @@ def sweep_osa(file_path_str, output_folder=None):
     
     print(peak_pows)
     print(peak_wls)
+    # Extract single peak power, assoc wavelength, and assoc current and temperature and sweep idx
+    peak_pow = max(peak_pows)
+    peak_pow_sweep = peak_pows.index(peak_pow)
+    peak_pow_wl = peak_wls[peak_pow_sweep]
+    peak_pow_I = curr[1][peak_pow_sweep]
+    peak_pow_temp = temp[1][peak_pow_sweep]
+    conditions["peak_power"] = peak_pow
+    conditions["peak_power_I"] = peak_pow_I
+    conditions["peak_power_temp"] = peak_pow_temp
+    conditions["peak_power_wl"] = peak_pow_wl
+    conditions["peak_power_sweep"] = peak_pow_sweep
+    print(f"Peak Power: {peak_pow_wl} at Sweep {peak_pow_sweep} with Power {peak_pow} and Current {peak_pow_I} at Temperature {peak_pow_temp}")
+
+    peak_wl = max(peak_wls)
+    peak_wl_sweep = peak_wls.index(peak_wl)
+    peak_wl_I = curr[1][peak_wl_sweep]
+    peak_wl_temp = temp[1][peak_wl_sweep]
+    peak_wl_pow = peak_pows[peak_wl_sweep]
+    conditions["peak_wl"] = peak_wl
+    conditions["peak_wl_I"] = peak_wl_I
+    conditions["peak_wl_temp"] = peak_wl_temp
+    conditions["peak_wl_pow"] = peak_wl_pow
+    conditions["peak_wl_sweep"] = peak_wl_sweep
+
+    print(f"Peak Power: {peak_wl} at Sweep {peak_wl_sweep} with Power {peak_wl_pow} and Current {peak_wl_I} at Temperature {peak_wl_temp}")
+
     
     # Polynomial fit: 2nd degree fit for peak wavelength vs current
     fit_x = curr[1].to_numpy()                  # current in mA
