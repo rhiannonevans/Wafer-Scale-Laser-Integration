@@ -5,6 +5,7 @@ def process_ldc(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
+    import re
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -19,6 +20,9 @@ def process_ldc(file_path_str, output_folder=None):
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist. Please check the file path.")
+    
+    liv = re.search(r"^liv", base_name, re.IGNORECASE)
+
 
     # Load the CSV file
     f = open(file_path, 'r')
@@ -111,8 +115,10 @@ def process_ldc(file_path_str, output_folder=None):
     for i, ch in enumerate(channels):
         if ch is not None:
             data_dict[f"channel {i}"] = ch
+            logged_ch = np.log(ch)
+            data_dict[f"log channel {i}"] = logged_ch
             if i == data_channel_index:
-                tidx = next(idx for idx, value in enumerate(ch) if value > 10**(-5))+1
+                tidx = next(idx for idx, value in enumerate(logged_ch) if value > 10)+1
                 print(f"Channel {i} used for threshold index:", tidx)
     
 
@@ -154,6 +160,7 @@ def process_ldc(file_path_str, output_folder=None):
     valid_channels = []
     for i, ch in enumerate(channels):
         if ch is not None:
+
             print(f"Found power (mW) data for Channel {i}")
             if noisy(ch.mean(), noise_threshold):
                 print(f"Channel {i} classified as noise, skipping.")
