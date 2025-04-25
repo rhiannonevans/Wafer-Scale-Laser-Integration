@@ -116,9 +116,10 @@ def process_ldc(file_path_str, output_folder=None):
         if ch is not None:
             data_dict[f"channel {i}"] = ch
             logged_ch = np.log(ch)
+            print(f"Logged channel {i}:", logged_ch)
             data_dict[f"log channel {i}"] = logged_ch
             if i == data_channel_index:
-                tidx = next(idx for idx, value in enumerate(logged_ch) if value > 10)+1
+                tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
                 print(f"Channel {i} used for threshold index:", tidx)
     
 
@@ -127,8 +128,10 @@ def process_ldc(file_path_str, output_folder=None):
 
     # Formulate comparison data (Max power of data channel and assoc current)
     if data_channel_index is not None:
-        data_dict["peak_power"] = channels[data_channel_index].max()
-        data_dict["peak_power_I"] = current[channels[data_channel_index].idxmax()]
+        peak_power = channels[data_channel_index].max()
+        peak_power_I = current[channels[data_channel_index].idxmax()]
+        data_dict["peak_power"] = peak_power
+        data_dict["peak_power_I"] = peak_power_I
         print(f"Peak power: {data_dict['peak_power']}")
         print(f"Assoc Current: {data_dict['peak_power_I']}")
     else:
@@ -196,6 +199,33 @@ def process_ldc(file_path_str, output_folder=None):
             ax.set_ylabel("Power (mW)")
             ax.grid(True)
 
+            fig, ax = plt.subplots()
+            ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
+            ax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+            ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+            ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+
+            fig1, ax1 = plt.subplots()
+            ax1.plot(fcurrent, logged_ch, color='black', marker='o', label=f"Channel {i}")
+            ax1.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+            ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+            ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+
+            #ax.set_xticks(i_ticks)
+            #ax.set_xticklabels(i_ticks)
+            #ax.set_yticks(ch_ticks)
+            #ax.set_yticklabels(ch_ticks)
+            ax.set_title(f"Current vs Power - Channel {i}")
+            ax.set_xlabel("Current (mA)")
+            ax.set_ylabel("Power (mW)")
+            ax.grid(True)
+
+            ax1.set_title(f"Current vs Log Power - Channel {i}")
+            ax1.set_xlabel("Current (mA)")
+            ax1.set_ylabel("Log Power (LOG(mW))")
+            ax1.grid(True)
+
+
             # Save the channel plot as an SVG file in the output folder
             svg_filename = base_name + f"_LI_channel{i}.svg"
             save_path_svg = os.path.join(save_dir, svg_filename)
@@ -207,4 +237,16 @@ def process_ldc(file_path_str, output_folder=None):
             save_path_png = os.path.join(save_dir, png_filename)
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
+
+            #save the log channel plot as an SVG file in the output folder
+            svg_filename1 = base_name + f"_LI_channel{i}_log.svg"
+            save_path_svg1 = os.path.join(save_dir, svg_filename1)
+            fig1.savefig(save_path_svg1, format="svg", bbox_inches="tight")
+            print(f"Saved channel {i} log plot to {save_path_svg1}")
+            # Optionally, close the figure: plt.close(fig)
+            # Save the channel plot as an PNG file in the output folder
+            png_filename1 = base_name + f"_LI_channel{i}_log.png"
+            save_path_png1 = os.path.join(save_dir, png_filename1)
+            fig1.savefig(save_path_png1, format="png", bbox_inches="tight")
+            print(f"Saved channel {i} log plot to {save_path_png1}")
 
