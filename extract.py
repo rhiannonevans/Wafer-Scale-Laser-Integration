@@ -197,12 +197,14 @@ def setup_compdictionaries():
     # Initialize dictionaries to hold the comparison data.
     comp_dict = {
         "osa": {
+            "IDtag": [],
             "peak_power": [],
             "peak_power_wl": [],
             "peak_power_I": [],
             "peak_power_temp": [],
         },
         "wlm": {
+            "IDtag": [],
             "threshold_current": [],
             "peak_power": [],
             "peak_power_I": [],
@@ -210,6 +212,7 @@ def setup_compdictionaries():
             "peak_power_V": [],
         },
         "ldc": {
+            "IDtag": [],
             "threshold_current": [],
             "peak_power": [],
             "peak_power_I": [],
@@ -312,6 +315,23 @@ def main():
                 for file in files:
                     if file.endswith(".mat"):
                         file_path = os.path.join(current_root, file)
+                        # Split the file name by '_'
+                        file_name_parts = file.split('_')
+
+                        # Find the substring containing "Chip" followed by numbers
+                        chipstring = next((part for part in file_name_parts if part.startswith("Chip") and any(char.isdigit() for char in part)), None)
+
+                        # Find the substring containing 'R' followed by a number
+                        rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
+
+                        # Create the IDtag
+                        if chipstring and rstring:
+                            IDtag = f"{chipstring}_{rstring}"
+                        else:
+                            IDtag = "Unknown_ID"
+
+                        print(f"Processing file: {file_path} with IDtag: {IDtag}")
+
                         if "osa" not in file.lower() and comp_mode == "osa":
                             print(f"Skipping file (not OSA): {file_path}")
                             continue
@@ -323,12 +343,15 @@ def main():
                             continue
                         try:
                             if comp_mode == "osa":
+                                dictionaries["osa"]["IDtag"].append(IDtag)
                                 data = extract_osa(file_path)
                                 update_osa_dict(dictionaries, data, file_path)
                             elif comp_mode == "wlm":
+                                dictionaries["wlm"]["IDtag"].append(IDtag)
                                 data = extract_wlm(file_path)
                                 update_wlm_dict(dictionaries, data, file_path)
                             elif comp_mode == "ldc":
+                                dictionaries["ldc"]["IDtag"].append(IDtag)
                                 data = extract_ldc(file_path)
                                 print("LDC not functional yet")
                         except Exception as e:
@@ -359,7 +382,9 @@ def main():
         else:
             print("Invalid selection mode. Exiting.")
     finally:
-        print(dictionaries)
+        #print(dictionaries)
+        # the next line MUST BE CHANGED IF WE IMPLEMENT MULTI-MODE PROCESSING
+        print(f"Processed chip IDs: {dictionaries[comp_mode]['IDtag']}")
         if comp_mode == "osa":
             # Call the plotting function for OSA data.
             plot_osa(dictionaries, folder_path)
