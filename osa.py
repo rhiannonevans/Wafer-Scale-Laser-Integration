@@ -12,7 +12,7 @@ import matplotlib as mpl
 # Processes "OSA-type" files - files which have "osa" in the name or are over 50 KB.
 # Produces .mat files and plots of data.
 # Expects a CSV with N sweeps, for which each sweep has 2 rows of single data-points (current and temp) followed by 2 rows of optical power and wavelength data (100+ datapoints each).
-# For comparison plots: Extracts threshold current, peak power and assoc wavelength for each sweep, peak power of all sweeps and assoc wavelength, temp, and current.
+# For comparison plots: Extracts peak power and assoc wavelength for each sweep, peak power of all sweeps and assoc wavelength, temp, and current.
 #           Also extracts peak wavelength and assoc power, temp, and current. - BUT - does this based on peak powers  
 #           - thus true peak wavelength may not be the same as the peak power wavelength. 
 # Generates OSA spectrum plots, peak power vs wavelength, peak power vs current, and peak wavelength vs current.
@@ -143,7 +143,7 @@ def sweep_osa(file_path_str, output_folder=None):
     conditions["peak_power_temp"] = peak_pow_temp
     conditions["peak_power_wl"] = peak_pow_wl
     conditions["peak_power_sweep"] = peak_pow_sweep
-    print(f"Peak Power: {peak_pow_wl} at Sweep {peak_pow_sweep} with Power {peak_pow} and Current {peak_pow_I} at Temperature {peak_pow_temp}")
+    print(f"Peak Power: {peak_pow} at Sweep {peak_pow_sweep} with Wavelength {peak_pow_wl} and Current {peak_pow_I} at Temperature {peak_pow_temp}")
 
     peak_wl = max(peak_wls)
     peak_wl_sweep = peak_wls.index(peak_wl)
@@ -156,7 +156,7 @@ def sweep_osa(file_path_str, output_folder=None):
     conditions["peak_wl_pow"] = peak_wl_pow
     conditions["peak_wl_sweep"] = peak_wl_sweep
 
-    print(f"Peak Power: {peak_wl} at Sweep {peak_wl_sweep} with Power {peak_wl_pow} and Current {peak_wl_I} at Temperature {peak_wl_temp}")
+    print(f"Peak Wavelength (in peak pows): {peak_wl} at Sweep {peak_wl_sweep} with Power {peak_wl_pow} and Current {peak_wl_I} at Temperature {peak_wl_temp}")
 
     
     # Polynomial fit: 2nd degree fit for peak wavelength vs current
@@ -222,7 +222,7 @@ def sweep_osa(file_path_str, output_folder=None):
     # Save figures and processed data
     file_loc, file_name = os.path.split(file_path_str)
     base_name = file_name.split('.')[0]
-    nameMat = base_name + ".mat"
+    nameMat = base_name + "_OSA.mat"
     nameSVG1 = base_name + "_spectrum.svg"
     nameSVG2 = base_name + "_WLpeaks.svg"
     nameSVG3 = base_name + "_Ipeaks.svg"

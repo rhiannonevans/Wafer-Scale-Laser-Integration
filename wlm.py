@@ -146,7 +146,7 @@ def process_other(file_path_str, output_folder=None):
     
     
     print("Threshold current:", current[tidx])
-    data_dict["threhold_current"] = current[tidx]
+    data_dict["threshold_current"] = current[tidx]
 
     # Formulate comparison data (Max power of data channel and assoc current and wl)
 
@@ -178,7 +178,7 @@ def process_other(file_path_str, output_folder=None):
         os.makedirs(save_dir)
 
     # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + "_wlmdata.mat"
+    mat_filename = base_name + "_data_wlm.mat"
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")

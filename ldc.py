@@ -154,7 +154,7 @@ def process_ldc(file_path_str, output_folder=None):
         os.makedirs(save_dir)
 
     # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + "_ldcdata.mat"
+    mat_filename = base_name + "_data_ldc.mat"
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")
