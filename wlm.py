@@ -1,3 +1,11 @@
+# Processes "WLM-type" files - non-OSA files containing current and channel (power) data, as well as wavelength, temperature, and voltage data.
+#          Checks for the presence of wavelength, temperature, and voltage data. If not present, it switches to LDC processing.
+# Produces .mat files and plots of data.
+# Expects a CSV with Current, Wavelength, Voltage, Temperature, and Channel (optional channels 0 through 4) data.
+# For comparison plots: Extracts threshold current, peak power, and associated current, wavelength, and voltage.
+# Generates LIV curves and other WLM data plots (like wl vs temp, wl vs current).
+# Saves original mW power data and log power data.
+
 def process_other(file_path_str, output_folder=None):
     import os
     import numpy as np
@@ -99,7 +107,16 @@ def process_other(file_path_str, output_folder=None):
     channels = []
     channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4] if ch is not None]
     print("Channels found:", len(channels))
-    print(channels)
+    #print(channels)
+
+        # Build a dictionary with the core data for saving to a .mat file
+    data_dict = {
+        "temperature": temperature,
+        "voltage": voltage,
+        "current": current,
+        "wavelength": wavelength,
+    }
+    print("Data dictionary initialized")
 
     # Determine the "data" channel based on the largest average value
     data_channel_index = None
@@ -116,27 +133,18 @@ def process_other(file_path_str, output_folder=None):
     else:
         print("No valid data channel found.")
 
-    # Build a dictionary with the core data for saving to a .mat file
-    data_dict = {
-        "temperature": temperature,
-        "voltage": voltage,
-        "current": current,
-        "wavelength": wavelength
-    }
-    print("Data dictionary initialized")
-    #print("Data dictionary:", data_dict)
-    for i, ch in enumerate(channels):
-        if ch is not None:
-            data_dict[f"channel {i}"] = ch
-            logged_ch = np.log(ch)
-            print(f"Logged channel {i}:", logged_ch)
-            data_dict[f"log channel {i}"] = logged_ch
-            if i == data_channel_index:
-                tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
-                print(f"Channel {i} used for threshold index:", tidx)
-    
-    
 
+
+    for i, ch in enumerate(channels):
+        data_dict[f"channel_{i}"] = ch
+        logged_ch = np.log(ch)
+        print(f"Saved channel {i}:")
+        data_dict[f"log_channel_{i}"] = logged_ch
+        if i == data_channel_index:
+            tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
+            print(f"Channel {i} used for threshold index:", tidx)
+    
+    
     print("Threshold current:", current[tidx])
     data_dict["threhold_current"] = current[tidx]
 
@@ -170,7 +178,7 @@ def process_other(file_path_str, output_folder=None):
         os.makedirs(save_dir)
 
     # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + "_data.mat"
+    mat_filename = base_name + "_wlmdata.mat"
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")

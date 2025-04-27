@@ -8,6 +8,16 @@ import scipy.io as sio
 import scipy as scp
 import matplotlib as mpl
 
+
+# Processes "OSA-type" files - files which have "osa" in the name or are over 50 KB.
+# Produces .mat files and plots of data.
+# Expects a CSV with N sweeps, for which each sweep has 2 rows of single data-points (current and temp) followed by 2 rows of optical power and wavelength data (100+ datapoints each).
+# For comparison plots: Extracts threshold current, peak power and assoc wavelength for each sweep, peak power of all sweeps and assoc wavelength, temp, and current.
+#           Also extracts peak wavelength and assoc power, temp, and current. - BUT - does this based on peak powers  
+#           - thus true peak wavelength may not be the same as the peak power wavelength. 
+# Generates OSA spectrum plots, peak power vs wavelength, peak power vs current, and peak wavelength vs current.
+
+
 def sweep_osa(file_path_str, output_folder=None):
     # Expand the file path
     file_path = os.path.expanduser(file_path_str)
@@ -256,6 +266,15 @@ def sweep_osa(file_path_str, output_folder=None):
     d_OSA = {
         "peak_power": peak_pows,
         "peak_wavelength": peak_wls,
+        "peak_power_sweep": peak_pow_sweep,
+        "peak_power_wl": peak_pow_wl,
+        "peak_power_I": peak_pow_I,
+        "peak_power_temp": peak_pow_temp,
+        "peak_wl_sweep": peak_wl_sweep,
+        "peak_wl": peak_wl,
+        "peak_wl_I": peak_wl_I,
+        "peak_wl_temp": peak_wl_temp,
+        "peak_wl_pow": peak_wl_pow,
         "current_mA": curr[1].tolist(),
         "temperature_C": temp[1].tolist(),
         "optical_power_dBm": OSA_df["Optical Power (dBm)"].tolist(),

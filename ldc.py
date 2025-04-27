@@ -1,3 +1,10 @@
+# Processes "LDC-type" files - non-OSA files containing only current and channel (power) data.
+# Produces .mat files and plots of data.
+# Expects a CSV with Current and Channel (optional channels 0 through 4) data.
+# For comparison plots: Extracts threshold current and  peak power w associated current.
+# Generates LIV curves.
+# Saves original mW power data and log power data.
+
 def process_ldc(file_path_str, output_folder=None):
     import os
     import numpy as np
@@ -114,10 +121,10 @@ def process_ldc(file_path_str, output_folder=None):
 
     for i, ch in enumerate(channels):
         if ch is not None:
-            data_dict[f"channel {i}"] = ch
+            data_dict[f"channel_{i}"] = ch
             logged_ch = np.log(ch)
             print(f"Logged channel {i}:", logged_ch)
-            data_dict[f"log channel {i}"] = logged_ch
+            data_dict[f"log_channel_{i}"] = logged_ch
             if i == data_channel_index:
                 tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
                 print(f"Channel {i} used for threshold index:", tidx)
@@ -147,7 +154,7 @@ def process_ldc(file_path_str, output_folder=None):
         os.makedirs(save_dir)
 
     # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + "_data.mat"
+    mat_filename = base_name + "_ldcdata.mat"
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")
