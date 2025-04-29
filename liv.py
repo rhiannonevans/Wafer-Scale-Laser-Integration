@@ -1,11 +1,11 @@
-# Processes "LDC-type" files - non-OSA files containing only current and channel (power) data.
+# Processes "LIV-type" files - non-OSA files containing non-useful wl data.
 # Produces .mat files and plots of data.
 # Expects a CSV with Current and Channel (optional channels 0 through 4) data.
 # For comparison plots: Extracts threshold current and  peak power w associated current.
 # Generates LIV curves.
 # Saves original mW power data and log power data.
 
-def process_ldc(file_path_str, output_folder=None):
+def process_liv(file_path_str, output_folder=None):
     import os
     import numpy as np
     import pandas as pd
@@ -40,6 +40,8 @@ def process_ldc(file_path_str, output_folder=None):
     # Define search terms for each target row
     search_terms = {
         "current": "Current",
+        "voltage": "Voltage",
+        "temperature": "Temperature",
         "channel 0": "0",
         "channel 1": "1",
         "channel 2": "2",
@@ -67,10 +69,19 @@ def process_ldc(file_path_str, output_folder=None):
      print(current)
     else:
      current = None
-     print("No current data found for LDC, aborting file...")
+     print("No current data found for LIV, aborting file...")
      return
 
     print("Current data extracted")
+
+    if voltage is not None and temperature is not None:
+        voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
+        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
+    else:
+        print("No Voltage, and/or Temperature data found. Invalid File.")
+        return
+    print("Voltage and Temperature data extracted")
+
 
     ch0 = pd.to_numeric(df.loc[indices["channel 0"]],errors='coerce') if indices["channel 0"] is not None else None
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
@@ -78,7 +89,7 @@ def process_ldc(file_path_str, output_folder=None):
     ch3 = pd.to_numeric(df.loc[indices["channel 3"]],errors='coerce')  if indices["channel 3"] is not None else None
     ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
 
-    print("Extrated ch and current data")
+    print("Extrated channel (power) data")
 
     # Optionally, convert power data if provided in mW (0: already in dBm, 1: in mW)
     is_mW = 0
@@ -113,7 +124,9 @@ def process_ldc(file_path_str, output_folder=None):
 
     # Build a dictionary with the core data for saving to a .mat file
     data_dict = {
-        "current": current
+        "current": current,
+        "temperature": temperature,
+        "voltage": voltage
     }
 
     print("Data dictionary initialized")
@@ -137,10 +150,13 @@ def process_ldc(file_path_str, output_folder=None):
     if data_channel_index is not None:
         peak_power = channels[data_channel_index].max()
         peak_power_I = current[channels[data_channel_index].idxmax()]
+        peak_power_V = voltage[channels[data_channel_index].idxmax()]
+        data_dict["peak_power_V"] = peak_power_V
         data_dict["peak_power"] = peak_power
         data_dict["peak_power_I"] = peak_power_I
         print(f"Peak power: {data_dict['peak_power']}")
         print(f"Assoc Current: {data_dict['peak_power_I']}")
+        print(f"Assoc Voltage: {data_dict['peak_power_V']}")
     else:
         print("No valid data channel found for peak power calculation.")
 
@@ -154,12 +170,11 @@ def process_ldc(file_path_str, output_folder=None):
         os.makedirs(save_dir)
 
     # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + "_data_ldc.mat"
+    mat_filename = base_name + "_data_liv.mat"
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")
 
-    # Determine the current data to use (filter by wavelength if not LDC)
     fcurrent = current
     # Dummy noise-check function (replace with your actual noise check if available)
     noise_threshold = 10 ** -30
@@ -178,6 +193,29 @@ def process_ldc(file_path_str, output_folder=None):
                 valid_channels.append((i, ch))
         else:
             print(f"No match found for Channel {i}.")
+
+
+    # Plot IV Curve
+    fig2, ax2 = plt.subplots()
+    ax2.plot(fcurrent, voltage, color='black', marker='o', label="IV Curve")
+    ax2.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+    ax2.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+    ax2.set_title(f"Current vs Voltage")
+    ax2.set_xlabel("Current (mA)")
+    ax2.set_ylabel("Voltage (V)")
+    ax2.grid(True)
+
+    #save svg
+    svg_filename2 = base_name + f"_IVcurve.svg"
+    save_path_svg2 = os.path.join(save_dir, svg_filename2)
+    fig2.savefig(save_path_svg2, format="svg", bbox_inches="tight")
+    print(f"Saved IV curve svg to {save_path_svg2}")
+     #save png
+    png_filename2 = base_name + f"_IVcurve.png"
+    save_path_png2 = os.path.join(save_dir, png_filename2)
+    fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
+    print(f"Saved IV curve png to {save_path_png2}")     
+
 
     num_valid = len(valid_channels)
     if num_valid == 0:
@@ -206,6 +244,7 @@ def process_ldc(file_path_str, output_folder=None):
             ax.set_ylabel("Power (mW)")
             ax.grid(True)
 
+            # LI and Log LI Curves
             fig, ax = plt.subplots()
             ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
             ax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
@@ -217,6 +256,7 @@ def process_ldc(file_path_str, output_folder=None):
             ax1.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
             ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+
 
             #ax.set_xticks(i_ticks)
             #ax.set_xticklabels(i_ticks)
@@ -231,6 +271,8 @@ def process_ldc(file_path_str, output_folder=None):
             ax1.set_xlabel("Current (mA)")
             ax1.set_ylabel("Log Power (LOG(mW))")
             ax1.grid(True)
+
+            
 
 
             # Save the channel plot as an SVG file in the output folder

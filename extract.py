@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 # This script is designed to extract data from .mat files and plot the results.
 # .mat fliles must have been produced from (MOST RECENT VERSION OF) data.py or it will fail. 
 
-def extract_ldc(mat_file_path):
-    print("LDC Extraction")
+def extract_liv(mat_file_path):
+    print("LIV Extraction")
     vars = ['peak_power', 'peak_power_I', 'threshold_current']
     data = read_mat_file(mat_file_path, vars)
     return data
@@ -151,10 +151,10 @@ def plot_wlm(data_dict, folder_path):
     plt.savefig(plot_path)
     print(f"Plots saved to {plot_path}")
 
-def plot_ldc(data_dict, folder_path):
-    # Plotting function for LDC data.
+def plot_liv(data_dict, folder_path):
+    # Plotting function for liv data.
 
-    data = data_dict.get('ldc', {})
+    data = data_dict.get('liv', {})
     print(data)
 
     # Extract data for plotting
@@ -188,7 +188,7 @@ def plot_ldc(data_dict, folder_path):
   
     plt.show()
     # Save the plot to the specified folder
-    plot_path = os.path.join(folder_path, '_ldc_plots.png')
+    plot_path = os.path.join(folder_path, '_liv_plots.png')
     plt.savefig(plot_path)
     print(f"Plots saved to {plot_path}")
 
@@ -211,7 +211,7 @@ def setup_compdictionaries():
             "peak_power_WL": [],
             "peak_power_V": [],
         },
-        "ldc": {
+        "liv": {
             "IDtag": [],
             "threshold_current": [],
             "peak_power": [],
@@ -253,17 +253,20 @@ def update_wlm_dict(comp_dict, data, file_path):
         arr = data['peak_power_V'].flatten()
         comp_dict["wlm"]["peak_power_V"].append(float(np.max(arr)) if arr.size > 0 else None)
 
-def update_ldc_dict(comp_dict, data, file_path):
-    # Update the LDC dictionary with data from the .mat file.
+def update_liv_dict(comp_dict, data, file_path):
+    # Update the liv dictionary with data from the .mat file.
     if 'threshold_current' in data:
         arr = data['threshold_current'].flatten()
-        comp_dict["ldc"]["threshold_current"].append(float(np.max(arr)) if arr.size > 0 else None)
+        comp_dict["liv"]["threshold_current"].append(float(np.max(arr)) if arr.size > 0 else None)
     if 'peak_power' in data:
         arr = data['peak_power'].flatten()
-        comp_dict["ldc"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)
+        comp_dict["liv"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)
     if 'peak_power_I' in data:
         arr = data['peak_power_I'].flatten()
-        comp_dict["ldc"]["peak_power_I"].append(float(np.max(arr)) if arr.size > 0 else None)
+        comp_dict["liv"]["peak_power_I"].append(float(np.max(arr)) if arr.size > 0 else None)
+    if 'peak_power_V' in data:
+        arr = data['peak_power_V'].flatten()
+        comp_dict["liv"]["peak_power_V"].append(float(np.max(arr)) if arr.size > 0 else None)
  
 def main():
     # Initialize Tkinter and hide the root window.
@@ -293,7 +296,7 @@ def main():
                                         "Select comparison mode for folder:\n"
                                         "(1) OSA files only\n"
                                         "(2) WLM files only\n"
-                                        "(3) LDC files only\nEnter 1, 2, or 3:")
+                                        "(3) liv files only\nEnter 1, 2, or 3:")
             if not comp_choice:
                 print("No comparison mode selected. Exiting.")
                 return
@@ -304,7 +307,7 @@ def main():
             elif comp_choice == '2':
                 comp_mode = "wlm"
             elif comp_choice == '3':
-                comp_mode = "ldc"
+                comp_mode = "liv"
             else:
                 print("Invalid processing mode selection. Exiting.")
                 return
@@ -338,8 +341,8 @@ def main():
                         elif "wlm" not in file.lower() and comp_mode == "wlm":
                             print(f"Skipping file (not WLM): {file_path}")
                             continue
-                        elif "ldc" not in file.lower() and comp_mode == "ldc":
-                            print(f"Skipping file (not LDC): {file_path}")
+                        elif "liv" not in file.lower() and comp_mode == "liv":
+                            print(f"Skipping file (not liv): {file_path}")
                             continue
                         try:
                             if comp_mode == "osa":
@@ -350,10 +353,10 @@ def main():
                                 dictionaries["wlm"]["IDtag"].append(IDtag)
                                 data = extract_wlm(file_path)
                                 update_wlm_dict(dictionaries, data, file_path)
-                            elif comp_mode == "ldc":
-                                dictionaries["ldc"]["IDtag"].append(IDtag)
-                                data = extract_ldc(file_path)
-                                print("LDC not functional yet")
+                            elif comp_mode == "liv":
+                                dictionaries["liv"]["IDtag"].append(IDtag)
+                                data = extract_liv(file_path)
+                                print("liv not functional yet")
                         except Exception as e:
                             # Print the full file name and a summary of the error, then continue.
                             print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
@@ -390,8 +393,8 @@ def main():
             plot_osa(dictionaries, folder_path)
         elif comp_mode == "wlm":
             plot_wlm(dictionaries, folder_path)
-        elif comp_mode == "ldc":
-            plot_ldc(dictionaries, folder_path)
+        elif comp_mode == "liv":
+            plot_liv(dictionaries, folder_path)
         root.destroy()
 
 if __name__ == '__main__':

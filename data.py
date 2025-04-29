@@ -107,8 +107,8 @@ def main():
             processing_choice = simpledialog.askstring("Processing Mode", 
                                         "Select processing mode for folder:\n"
                                         "(1) OSA files only\n"
-                                        "(2) WLM files only\n"
-                                        "(3) Both\nEnter 1, 2, or 3:")
+                                        "(2) WLM + LIV files only\n"
+                                        "(3) All\nEnter 1, 2, or 3:")
             if not processing_choice:
                 print("No processing mode selected. Exiting.")
                 return

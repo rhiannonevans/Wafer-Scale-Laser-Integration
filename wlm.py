@@ -1,5 +1,5 @@
 # Processes "WLM-type" files - non-OSA files containing current and channel (power) data, as well as wavelength, temperature, and voltage data.
-#          Checks for the presence of wavelength, temperature, and voltage data. If not present, it switches to LDC processing.
+#          Checks for the presence of useful wavelength data (mean > 1000 nm). If not present, it switches to LIV processing.
 # Produces .mat files and plots of data.
 # Expects a CSV with Current, Wavelength, Voltage, Temperature, and Channel (optional channels 0 through 4) data.
 # For comparison plots: Extracts threshold current, peak power, and associated current, wavelength, and voltage.
@@ -13,7 +13,8 @@ def process_other(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
-    import ldc
+    import liv
+    import re
 
 
     # Helper function to generate nicely spaced tick values
@@ -83,10 +84,15 @@ def process_other(file_path_str, output_folder=None):
         voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
         temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
     else:
-        print("No Wavlength, Voltage, and/or Temperature data found. Moving forward in LDC mode.")
-        #ldc.process_ldc(file_path,base_name,file_loc,df)     # Switch to LDC processing
-        ldc.process_ldc(file_path_str, output_folder=output_folder)  # Call the LDC processing function
+        print("No Wavlength, Voltage, and/or Temperature data found. Invalid File.")
         return
+    
+    liv = re.search(r"^liv", base_name, re.IGNORECASE)
+
+
+    if np.mean(wavelength) > 1000 or liv:
+        print("No useful Wavelength data found. Processing as LIV.")
+        liv.process_liv(file_path_str, output_folder=output_folder)  
 
     ch0 = pd.to_numeric(df.loc[indices["channel 0"]],errors='coerce') if indices["channel 0"] is not None else None
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
