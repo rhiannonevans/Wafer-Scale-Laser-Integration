@@ -327,9 +327,15 @@ def main():
                         # Find the substring containing 'R' followed by a number
                         rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
 
+                        # Extract the end of the file name (excluding the file extension)
+                        file_base_name = os.path.splitext(file)[0]
+                        end_identifier = file_base_name.split('_')[-1]
+
                         # Create the IDtag
-                        if chipstring and rstring:
-                            IDtag = f"{chipstring}_{rstring}"
+                        if chipstring and rstring and end_identifier:
+                            IDtag = f"{chipstring}_{rstring}_{end_identifier}"
+                        elif chipstring and rstring:
+                            IDtag = f"{chipstring}_{rstring}_Unknown"
                         else:
                             IDtag = "Unknown_ID"
 
