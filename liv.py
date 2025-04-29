@@ -28,15 +28,18 @@ def process_liv(file_path_str, output_folder=None):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist. Please check the file path.")
     
-    liv = re.search(r"^liv", base_name, re.IGNORECASE)
 
 
     # Load the CSV file
-    f = open(file_path, 'r')
-    print(f"Reading file: {file_path}")
-    df = pd.read_csv(f, header=None, on_bad_lines="skip", engine="python", skiprows=23)
-    f.close()
-    print(df)
+    # f = open(file_path, 'r')
+    # print(f"Reading file: {file_path}")
+    # df = pd.read_csv(f, header=None, on_bad_lines="skip", engine="python", skiprows=23)
+    # f.close()
+    # print(df)
+    with open(file_path, 'r') as file:
+        df = pd.read_csv(file, header=None, on_bad_lines="skip", engine="python", skiprows=24)
+        file.close()
+
     # Define search terms for each target row
     search_terms = {
         "current": "Current",

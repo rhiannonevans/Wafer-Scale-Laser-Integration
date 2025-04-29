@@ -33,9 +33,13 @@ def process_other(file_path_str, output_folder=None):
 
     # Load the CSV file
     #df = pd.read_csv(file_path, header=None, on_bad_lines="skip", engine="python", skiprows=24)
-    f = open(file_path, 'r')
-    df = pd.read_csv(f, header=None, on_bad_lines="skip", engine="python", skiprows=24)
-    f.close()
+    # f = open(file_path, 'r')
+    # df = pd.read_csv(f, header=None, on_bad_lines="skip", engine="python", skiprows=24)
+    # f.close()
+
+    with open(file_path, 'r') as file:
+        df = pd.read_csv(file, header=None, on_bad_lines="skip", engine="python", skiprows=24)
+        file.close()
 
     print(df)
     # Define search terms for each target row
