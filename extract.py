@@ -5,7 +5,7 @@ from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename
 import numpy as np
 import matplotlib.pyplot as plt
-
+import multi_select
 
 
 # This script is designed to extract data from .mat files and plot the results.
@@ -274,10 +274,13 @@ def main():
     root.withdraw()
     dictionaries = setup_compdictionaries()
 
+    # Set the default folder path - This will determine where the plots are saved.
+    save_plot_folder = "C:/Users/OWNER/Desktop"
+
     try:
         # Ask whether to process a folder or a single file.
         selection_choice = simpledialog.askstring("Select Mode", 
-                                        "Select mode:\n(1) Folder\n(2) Add a File (Not functional)\nEnter 1 (or 2):")
+                                        "Select mode:\n(1) Folder\n(2) Select from Parent Folder\n(3) Add a File (Not functional)Enter 1, 2, or 3:")
         if not selection_choice:
             print("No selection made. Exiting.")
             return
@@ -296,7 +299,7 @@ def main():
                                         "Select comparison mode for folder:\n"
                                         "(1) OSA files only\n"
                                         "(2) WLM files only\n"
-                                        "(3) liv files only\nEnter 1, 2, or 3:")
+                                        "(3) LIV files only\nEnter 1, 2, or 3:")
             if not comp_choice:
                 print("No comparison mode selected. Exiting.")
                 return
@@ -309,6 +312,7 @@ def main():
             elif comp_choice == '3':
                 comp_mode = "liv"
             else:
+                pass
                 print("Invalid processing mode selection. Exiting.")
                 return
 
@@ -368,7 +372,103 @@ def main():
                             print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
                         
         elif selection_choice.strip() == '2':
-            # File selection mode.
+            # Parent Folder selection mode.
+            print("Parent folder selection mode")
+
+            # Ask for processing type. 
+            # @TODO: Consider including option for all or multiple, then would need to sort datatypes as we do (complicated )
+            comp_choice = simpledialog.askstring("Comparison Mode", 
+                                        "Select comparison mode for folder:\n"
+                                        "(1) OSA files only\n"
+                                        "(2) WLM files only\n"
+                                        "(3) LIV files only\nEnter 1, 2, or 3:")
+            if not comp_choice:
+                print("No comparison mode selected. Exiting.")
+                return
+            
+            comp_choice = comp_choice.strip()
+            if comp_choice == '1':
+                comp_mode = "osa"
+            elif comp_choice == '2':
+                comp_mode = "wlm"
+            elif comp_choice == '3':
+                comp_mode = "liv"
+            else:
+                print("Invalid processing mode selection. Exiting.")
+                return
+            
+            selected_folders, folder_path = multi_select.scrape_filenames(root)
+            print(f"Selected parent folder: {folder_path}")
+            print(f"Selected folders: {selected_folders}")
+            
+            if not selected_folders:
+                print("No subfolders selected. Exiting.")
+                return
+
+            
+            # Recursively process every .mat file in the folder and its subfolders.
+            for current_root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    if file.endswith(".mat") :
+                        file_base_name = os.path.splitext(file)[0]
+                        # Check if the file is in the selected folders
+                        if not any(folder in file_base_name for folder in selected_folders):
+                            print(f"Skipping file (not in selected folders): {file_base_name}")
+                            continue
+
+                        file_path = os.path.join(current_root, file)
+                        # Split the file name by '_'
+                        file_name_parts = file.split('_')
+
+                        # Find the substring containing "Chip" followed by numbers
+                        chipstring = next((part for part in file_name_parts if part.startswith("Chip") and any(char.isdigit() for char in part)), None)
+
+                        # Find the substring containing 'R' followed by a number
+                        rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
+
+                        # Extract the end of the file name (excluding the file extension)
+                        end_identifier = file_base_name.split('_')[-1]
+
+                        # Create the IDtag
+                        if chipstring and rstring and end_identifier:
+                            IDtag = f"{chipstring}_{rstring}_{end_identifier}"
+                        elif chipstring and rstring:
+                            IDtag = f"{chipstring}_{rstring}_Unknown"
+                        else:
+                            IDtag = "Unknown_ID"
+
+                        print(f"Processing file: {file_path} with IDtag: {IDtag}")
+
+                        if "osa" not in file.lower() and comp_mode == "osa":
+                            print(f"Skipping file (not OSA): {file_path}")
+                            continue
+                        elif "wlm" not in file.lower() and comp_mode == "wlm":
+                            print(f"Skipping file (not WLM): {file_path}")
+                            continue
+                        elif "liv" not in file.lower() and comp_mode == "liv":
+                            print(f"Skipping file (not liv): {file_path}")
+                            continue
+                        try:
+                            if comp_mode == "osa":
+                                dictionaries["osa"]["IDtag"].append(IDtag)
+                                data = extract_osa(file_path)
+                                update_osa_dict(dictionaries, data, file_path)
+                            elif comp_mode == "wlm":
+                                dictionaries["wlm"]["IDtag"].append(IDtag)
+                                data = extract_wlm(file_path)
+                                update_wlm_dict(dictionaries, data, file_path)
+                            elif comp_mode == "liv":
+                                dictionaries["liv"]["IDtag"].append(IDtag)
+                                data = extract_liv(file_path)
+                                print("liv not functional yet")
+                        except Exception as e:
+                            # Print the full file name and a summary of the error, then continue.
+                            print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
+
+            print("File selection mode is not functional yet.")
+
+        elif selection_choice.strip() == '3':
+                        # File selection mode.
             # print("File selection mode")
             # file_path = askopenfilename(title="Select a CSV File", filetypes=[("CSV Files", "*.csv")])
             # if not file_path:
@@ -390,17 +490,18 @@ def main():
             print("File selection mode is not functional yet.")
         else:
             print("Invalid selection mode. Exiting.")
+            return
     finally:
         #print(dictionaries)
         # the next line MUST BE CHANGED IF WE IMPLEMENT MULTI-MODE PROCESSING
         print(f"Processed chip IDs: {dictionaries[comp_mode]['IDtag']}")
         if comp_mode == "osa":
             # Call the plotting function for OSA data.
-            plot_osa(dictionaries, folder_path)
+            plot_osa(dictionaries, save_plot_folder)
         elif comp_mode == "wlm":
-            plot_wlm(dictionaries, folder_path)
+            plot_wlm(dictionaries, save_plot_folder)
         elif comp_mode == "liv":
-            plot_liv(dictionaries, folder_path)
+            plot_liv(dictionaries, save_plot_folder)
         root.destroy()
 
 if __name__ == '__main__':

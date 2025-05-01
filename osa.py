@@ -222,7 +222,7 @@ def sweep_osa(file_path_str, output_folder=None):
     # Save figures and processed data
     file_loc, file_name = os.path.split(file_path_str)
     base_name = file_name.split('.')[0]
-    nameMat = base_name + "_OSA.mat"
+    nameMat = base_name + ".mat"
     nameSVG1 = base_name + "_spectrum.svg"
     nameSVG2 = base_name + "_WLpeaks.svg"
     nameSVG3 = base_name + "_Ipeaks.svg"

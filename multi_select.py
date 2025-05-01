@@ -1,11 +1,11 @@
 import os
-from tkinter import Tk, Toplevel, Label, Button, Checkbutton, IntVar, Frame
+import math
+from tkinter import (
+    Tk, Toplevel, Label, Button, Checkbutton, IntVar, Frame, Canvas, Scrollbar, VERTICAL, RIGHT, LEFT, BOTH, Y
+)
 from tkinter.filedialog import askdirectory
 
-# Prompts user to select parent folder, then brings up a multi-select menu where user selects subfolders to process. Returns a list of selected subfolder names.
-
-def scrape_filenames():
-    root = Tk()
+def scrape_filenames(root):
     root.withdraw()
 
     folder_path = askdirectory(title="Select a Folder Containing the CSV Files")
@@ -28,34 +28,57 @@ def scrape_filenames():
 
     def on_submit():
         for name, var in zip(subfolder_names, vars):
-            print(f"Checkbox for {name}: {var.get()}")
             if var.get():
                 selected_names.append(name)
-        print("Selected:", selected_names)
         selection_window.destroy()
 
     selection_window = Toplevel(root)
     selection_window.title("Select Subfolders")
-    selection_window.geometry("400x600")  # Set the window size (width x height)
-
-    # Center the window on the screen
-    selection_window.update_idletasks()
-    width = 400
-    height = 600
+    width, height = 650, 500
+    selection_window.geometry(f"{width}x{height}")
     x = (selection_window.winfo_screenwidth() // 2) - (width // 2)
     y = (selection_window.winfo_screenheight() // 2) - (height // 2)
     selection_window.geometry(f"{width}x{height}+{x}+{y}")
 
     Label(selection_window, text="Select subfolders:").pack(anchor="w", padx=10, pady=5)
 
+    # Outer frame with canvas and scrollbar
+    outer_frame = Frame(selection_window)
+    outer_frame.pack(padx=10, pady=10, fill=BOTH, expand=True)
+
+    canvas = Canvas(outer_frame)
+    scrollbar = Scrollbar(outer_frame, orient=VERTICAL, command=canvas.yview)
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    scrollbar.pack(side=RIGHT, fill=Y)
+    canvas.pack(side=LEFT, fill=BOTH, expand=True)
+
+    # Frame inside the canvas to hold checkboxes
+    checkbox_frame = Frame(canvas)
+    canvas.create_window((0, 0), window=checkbox_frame, anchor="nw")
+
+    # Adjust column layout dynamically
+    num_items = len(subfolder_names)
+    max_rows = 20
+    max_columns = 5
+    num_columns = min(math.ceil(num_items / max_rows), max_columns)
+    num_rows = math.ceil(num_items / num_columns)
+
     vars = []
-    for name in subfolder_names:
+    for index, name in enumerate(subfolder_names):
         var = IntVar()
         vars.append(var)
-        cb = Checkbutton(selection_window, text=name, variable=var)
-        cb.pack(anchor="w", padx=10)
+        row = index % num_rows
+        col = index // num_rows
+        cb = Checkbutton(checkbox_frame, text=name, variable=var)
+        cb.grid(row=row, column=col, sticky="w", padx=5, pady=2)
 
-    # Frame to hold buttons horizontally
+    # Update scroll region after rendering
+    def on_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    checkbox_frame.bind("<Configure>", on_configure)
+
+    # Buttons
     button_frame = Frame(selection_window)
     button_frame.pack(pady=10)
 
@@ -64,9 +87,10 @@ def scrape_filenames():
     Button(button_frame, text="Submit", command=on_submit).pack(side="left", padx=5)
 
     root.wait_window(selection_window)
-
-    print("Returning:", selected_names)
-    return selected_names
+    return selected_names, folder_path
 
 if __name__ == "__main__":
-    scrape_filenames()
+    root = Tk()
+    selections, parent_folder = scrape_filenames(root)
+    print("User selected:", selections)
+    print("Parent folder:", parent_folder)
