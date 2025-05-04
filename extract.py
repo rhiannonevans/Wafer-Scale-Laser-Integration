@@ -267,6 +267,69 @@ def update_liv_dict(comp_dict, data, file_path):
     if 'peak_power_V' in data:
         arr = data['peak_power_V'].flatten()
         comp_dict["liv"]["peak_power_V"].append(float(np.max(arr)) if arr.size > 0 else None)
+
+def get_IDtag(file):
+    file_base_name = os.path.splitext(file)[0]
+    file_name_parts = file.split('_')
+
+    # Find the substring containing "Chip" followed by numbers
+    chipstring = next((part for part in file_name_parts if part.startswith("Chip") and any(char.isdigit() for char in part)), None)
+
+    # Find the substring containing 'R' followed by a number
+    rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
+
+    # Extract the end of the file name (excluding the file extension)
+    file_base_name = os.path.splitext(file)[0]
+    end_identifier = file_base_name.split('_')[-1]
+
+    # Create the IDtag
+    if chipstring and rstring and end_identifier:
+        IDtag = f"{chipstring}_{rstring}_{end_identifier}"
+    elif chipstring and rstring:
+        IDtag = f"{chipstring}_{rstring}_Unknown"
+    else:
+        IDtag = "Unknown_ID"
+
+    print(f"Processing file: {file_base_name} with IDtag: {IDtag}")
+    return IDtag
+
+def update(comp_dict, data, file_name):
+    # Update the dictionary with data from the .mat file.
+    if 'osa' in file_name:
+        update_osa_dict(comp_dict, data, file_name)
+    elif 'wlm' in file_name:
+        update_wlm_dict(comp_dict, data, file_name)
+    elif 'liv' in file_name:
+        update_liv_dict(comp_dict, data, file_name)
+
+def iterate_files(dictionaries, parent_path, selection_mode = '1', selected_files = []):
+    for current_root, dirs, files in os.walk(parent_path):
+                for file in files:
+                    if file.endswith(".mat"):
+                        file_path = os.path.join(current_root, file)
+                        file_base_name = os.path.splitext(file)[0]
+                        IDtag = get_IDtag(file)
+                        if selection_mode == '2' and file_base_name not in selected_files:
+                            print(f"Skipping file (not selected): {file_path}")
+                            continue
+                        try:
+                            if "osa" in file.lower():
+                                dictionaries["osa"]["IDtag"].append(IDtag)
+                                data = extract_osa(file_path)
+                                update_osa_dict(dictionaries, data, file_path)
+                            elif "wlm" in file.lower():
+                                dictionaries["wlm"]["IDtag"].append(IDtag)
+                                data = extract_wlm(file_path)
+                                update_wlm_dict(dictionaries, data, file_path)
+                            elif "liv" in file.lower():
+                                dictionaries["liv"]["IDtag"].append(IDtag)
+                                data = extract_liv(file_path)
+                                print("liv not functional yet")
+                        except Exception as e:
+                            # Print the full file name and a summary of the error, then continue.
+                            print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
+
+
  
 def main():
     # Initialize Tkinter and hide the root window.
@@ -322,28 +385,6 @@ def main():
                 for file in files:
                     if file.endswith(".mat"):
                         file_path = os.path.join(current_root, file)
-                        # Split the file name by '_'
-                        file_name_parts = file.split('_')
-
-                        # Find the substring containing "Chip" followed by numbers
-                        chipstring = next((part for part in file_name_parts if part.startswith("Chip") and any(char.isdigit() for char in part)), None)
-
-                        # Find the substring containing 'R' followed by a number
-                        rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
-
-                        # Extract the end of the file name (excluding the file extension)
-                        file_base_name = os.path.splitext(file)[0]
-                        end_identifier = file_base_name.split('_')[-1]
-
-                        # Create the IDtag
-                        if chipstring and rstring and end_identifier:
-                            IDtag = f"{chipstring}_{rstring}_{end_identifier}"
-                        elif chipstring and rstring:
-                            IDtag = f"{chipstring}_{rstring}_Unknown"
-                        else:
-                            IDtag = "Unknown_ID"
-
-                        print(f"Processing file: {file_path} with IDtag: {IDtag}")
 
                         if "osa" not in file.lower() and comp_mode == "osa":
                             print(f"Skipping file (not OSA): {file_path}")

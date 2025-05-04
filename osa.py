@@ -195,28 +195,28 @@ def sweep_osa(file_path_str, output_folder=None):
     ax1.set_title("Wavelength vs Optical Power by Sweep")
     ax1.set_xlabel("Wavelength (nm)")
     ax1.set_ylabel("Optical Power (dBm)")
-    ax1.legend(title="Sweep / Current (mA) / Temperature (C)", loc='center right', bbox_to_anchor=(1, 0.3))
+    # ax1.legend(title="Sweep / Current (mA) / Temperature (C)", loc='center right', bbox_to_anchor=(1, 0.3))
     ax1.grid(True)
     fig1.tight_layout()
     
     ax2.set_title("Associated Wavelength at Peak Power by Sweep")
     ax2.set_xlabel("Current (mA)")
     ax2.set_ylabel("Wavelength (nm)")
-    ax2.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
+    # ax2.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
     fig2.tight_layout()
     
     
     ax3.set_title("Peak Power and Assoc. Current by Sweep")
     ax3.set_xlabel("Current (mA)")
     ax3.set_ylabel("Power (dBm)")
-    ax3.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
+    # ax3.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
     fig3.tight_layout()
 
     
     ax4.set_title("Peak Power and Assoc. Wavelength by Sweep")
     ax4.set_xlabel("Current (mA)")
     ax4.set_ylabel("Wavelength (nm)")
-    ax4.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
+    # ax4.legend(title="Sweep", loc='center right', bbox_to_anchor=(1, 0.3))
     fig4.tight_layout()
 
     # Save figures and processed data

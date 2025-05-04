@@ -58,24 +58,24 @@ def process_file(file_path, process_mode, base_folder=None):
 
     if process_mode == "osa":
         if osa_condition:
-            print(f"Processing {file_path} with OSA")
+            print(f"Processing {file_path} as OSA")
             osa.sweep_osa(file_path, output_folder=output_folder)
         else:
-            print(f"Skipping {file_path}: does not meet OSA criteria.")
+            print(f"Skipping {file_path}: does not meet OSA criteria. Skipping...")
             
-    elif process_mode == "wlm":
+    elif process_mode == "liv":
         if not osa_condition:
-            print(f"Processing {file_path} with WLM")
+            print(f"Processing {file_path} as LIV")
             wlm.process_other(file_path, output_folder=output_folder)
         else:
-            print(f"Skipping {file_path}: qualifies as OSA, not WLM.")
+            print(f"Skipping {file_path}: qualifies as OSA, not LIV. Skipping...")
             
     elif process_mode == "both":
         if osa_condition:
-            print(f"Processing {file_path} with OSA (both mode)")
+            print(f"Processing {file_path} as OSA (both mode)")
             osa.sweep_osa(file_path, output_folder=output_folder)
         else:
-            print(f"Processing {file_path} with WLM (both mode)")
+            print(f"Processing {file_path} as LIV (both mode)")
             wlm.process_other(file_path, output_folder=output_folder)
     else:
         raise ValueError("Invalid processing mode specified.")
@@ -107,7 +107,7 @@ def main():
             processing_choice = simpledialog.askstring("Processing Mode", 
                                         "Select processing mode for folder:\n"
                                         "(1) OSA files only\n"
-                                        "(2) WLM + LIV files only\n"
+                                        "(2) LIV files only\n"
                                         "(3) All\nEnter 1, 2, or 3:")
             if not processing_choice:
                 print("No processing mode selected. Exiting.")
