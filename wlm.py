@@ -83,20 +83,21 @@ def process_other(file_path_str, output_folder=None):
     #print("Voltage:", voltage)  
     #print("Temperature:", temperature)
 
-    if wavelength is not None and voltage is not None and temperature is not None:
-        wavelength = pd.to_numeric(df.loc[indices["wavelength"]], errors='coerce')
+    if voltage is not None and temperature is not None:
         voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
         temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
     else:
-        print("No Wavlength, Voltage, and/or Temperature data found. Invalid File.")
+        print("No Voltage, and/or Temperature data found. Invalid File.")
         return
     
     liv = re.search(r"^liv", base_name, re.IGNORECASE)
 
 
-    if np.mean(wavelength) > 1000 or liv:
+    if wavelength is None or liv:
         print("No useful Wavelength data found. Processing as LIV.")
-        liv.process_liv(file_path_str, output_folder=output_folder)  
+        liv.process_liv(file_path_str, output_folder=output_folder) 
+    else:
+        wavelength = pd.to_numeric(df.loc[indices["wavelength"]], errors='coerce')
 
     ch0 = pd.to_numeric(df.loc[indices["channel 0"]],errors='coerce') if indices["channel 0"] is not None else None
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
@@ -144,19 +145,23 @@ def process_other(file_path_str, output_folder=None):
         print("No valid data channel found.")
 
 
-
+    threshold_Is = []
     for i, ch in enumerate(channels):
         data_dict[f"channel_{i}"] = ch
         logged_ch = np.log(ch)
         print(f"Saved channel {i}:")
         data_dict[f"log_channel_{i}"] = logged_ch
-        if i == data_channel_index:
-            tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
-            print(f"Channel {i} used for threshold index:", tidx)
+
+        tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
+        threshold_Is.append(current[tidx])
+        print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
+        # if i == data_channel_index:
+        #     tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
+        #     print(f"Channel {i} used for threshold index:", tidx)
     
     
-    print("Threshold current:", current[tidx])
-    data_dict["threshold_current"] = current[tidx]
+    print("Threshold currents:", threshold_Is)
+    data_dict["threshold_currents"] = threshold_Is
 
     # Formulate comparison data (Max power of data channel and assoc current and wl)
 

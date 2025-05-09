@@ -134,20 +134,25 @@ def process_liv(file_path_str, output_folder=None):
 
     print("Data dictionary initialized")
  
-
+    threshold_Is = []
     for i, ch in enumerate(channels):
         if ch is not None:
             data_dict[f"channel_{i}"] = ch
             logged_ch = np.log(ch)
             print(f"Logged channel {i}:", logged_ch)
+            print(f"Saved channel {i}:")
             data_dict[f"log_channel_{i}"] = logged_ch
-            if i == data_channel_index:
-                tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
-                print(f"Channel {i} used for threshold index:", tidx)
+
+            tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
+            threshold_Is.append(current[tidx])
+            print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
+            # if i == data_channel_index:
+            #     tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
+            #     print(f"Channel {i} used for threshold index:", tidx)
     
 
-    print("Threshold current:", current[tidx])
-    data_dict["threhold_current"] = current[tidx]
+    print("Threshold currents:", threshold_Is)
+    data_dict["threhold_currents"] = threshold_Is
 
     # Formulate comparison data (Max power of data channel and assoc current)
     if data_channel_index is not None:
@@ -240,7 +245,7 @@ def process_liv(file_path_str, output_folder=None):
             #ax.set_xticklabels(i_ticks)
             #ax.set_yticks(ch_ticks)
             #ax.set_yticklabels(ch_ticks)
-            ax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+            ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
             ax.legend()
             ax.set_title(f"Current vs Power - Channel {i}")
             ax.set_xlabel("Current (mA)")
@@ -250,13 +255,13 @@ def process_liv(file_path_str, output_folder=None):
             # LI and Log LI Curves
             fig, ax = plt.subplots()
             ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
-            ax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+            ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
             ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
             fig1, ax1 = plt.subplots()
             ax1.plot(fcurrent, logged_ch, color='black', marker='o', label=f"Channel {i}")
-            ax1.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+            ax1.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
             ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 

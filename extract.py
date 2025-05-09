@@ -13,7 +13,7 @@ import multi_select
 
 def extract_liv(mat_file_path):
     print("LIV Extraction")
-    vars = ['peak_power', 'peak_power_I', 'threshold_current']
+    vars = ['peak_power', 'peak_power_I', 'threshold_currents']
     data = read_mat_file(mat_file_path, vars)
     return data
 
@@ -26,7 +26,7 @@ def extract_osa(mat_file_path):
 
 def extract_wlm(mat_file_path):
     print("WLM Extraction")
-    vars = ['peak_power', 'peak_power_I', 'threshold_current', 'peak_power_WL', 'peak_power_V']
+    vars = ['peak_power', 'peak_power_I', 'threshold_currents', 'peak_power_WL', 'peak_power_V']
     data = read_mat_file(mat_file_path, vars)
     print(data)
     return data
@@ -160,11 +160,11 @@ def plot_liv(data_dict, folder_path):
     # Extract data for plotting
     peak_power = data.get('peak_power', [])
     peak_power_I = data.get('peak_power_I', [])
-    threshold_current = data.get('threshold_current', [])
+    threshold_currents = data.get('threshold_currents', [])
 
     print(f"Peak Power: {peak_power}")
     print(f"Peak Power I: {peak_power_I}")
-    print(f"Threshold Current: {threshold_current}")
+    print(f"Threshold Currents: {threshold_currents}")
 
     # Create plots
     plt.figure(figsize=(10, 6))
@@ -177,13 +177,13 @@ def plot_liv(data_dict, folder_path):
 
     print("Plot 1 successful - peak power vs current")
     
-    plt.subplot(1, 2, 2)
-    plt.scatter(threshold_current, peak_power, label='Peak Power by Assoc Threshold Current')
-    plt.xlabel('Threshold Current (A)')
-    plt.ylabel('Peak Power (mW)')
-    plt.title('Peak Power - Assoc Threshold Current')
+    # plt.subplot(1, 2, 2)
+    # plt.scatter(threshold_current, peak_power, label='Peak Power by Assoc Threshold Current')
+    # plt.xlabel('Threshold Current (A)')
+    # plt.ylabel('Peak Power (mW)')
+    # plt.title('Peak Power - Assoc Threshold Current')
     
-    print("Plot 2 successful - peak power vs threshold current")
+    # print("Plot 2 successful - peak power vs threshold current")
 
   
     plt.show()
@@ -205,7 +205,7 @@ def setup_compdictionaries():
         },
         "wlm": {
             "IDtag": [],
-            "threshold_current": [],
+            "threshold_currents": [],
             "peak_power": [],
             "peak_power_I": [],
             "peak_power_WL": [],
@@ -213,7 +213,7 @@ def setup_compdictionaries():
         },
         "liv": {
             "IDtag": [],
-            "threshold_current": [],
+            "threshold_currents": [],
             "peak_power": [],
             "peak_power_I": [],
         }
@@ -237,9 +237,9 @@ def update_osa_dict(comp_dict, data, file_path):
 
 def update_wlm_dict(comp_dict, data, file_path):
     # Update the WLM dictionary with data from the .mat file.
-    if 'threshold_current' in data:
-        arr = data['threshold_current'].flatten()
-        comp_dict["wlm"]["threshold_current"].append(float(np.max(arr)) if arr.size > 0 else None)
+    if 'threshold_currents' in data:
+        arr = data['threshold_currents'].flatten()
+        comp_dict["wlm"]["threshold_currents"].append(float(np.max(arr)) if arr.size > 0 else None)
     if 'peak_power' in data:
         arr = data['peak_power'].flatten()
         comp_dict["wlm"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)
@@ -255,9 +255,9 @@ def update_wlm_dict(comp_dict, data, file_path):
 
 def update_liv_dict(comp_dict, data, file_path):
     # Update the liv dictionary with data from the .mat file.
-    if 'threshold_current' in data:
-        arr = data['threshold_current'].flatten()
-        comp_dict["liv"]["threshold_current"].append(float(np.max(arr)) if arr.size > 0 else None)
+    if 'threshold_currents' in data:
+        arr = data['threshold_currents'].flatten()
+        comp_dict["liv"]["threshold_currents"].append(float(np.max(arr)) if arr.size > 0 else None)
     if 'peak_power' in data:
         arr = data['peak_power'].flatten()
         comp_dict["liv"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)

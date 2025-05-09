@@ -38,10 +38,9 @@ def gather_mat_data(folder_paths):
                     data.append((mat_data, file))
     return data
 
-def plot_data(data):
-    colormap = cm.get_cmap('inferno')
-
-    def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title):
+def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title):
+        
+        colormap = cm.get_cmap('inferno')
         plt.figure()
         num_files = len(data)
         for i, (mat_data, filename) in enumerate(data):
@@ -73,6 +72,11 @@ def plot_data(data):
             plt.savefig(plot_path, bbox_inches='tight')
         plt.show()  # Show the plot after saving
 
+
+def plot_data(data):
+    
+
+    
     # Plot Current vs Peak Wavelength
     plot_scatter(data, 'current_mA', 'peak_wavelength', 'Current (mA)', 'Peak Wavelength (nm)', 
                  "Overlay Plot of Current vs Peak Wavelength", "Current vs Peak Wavelength")
@@ -117,6 +121,8 @@ def plot_data(data):
 
     plot_single_point(data, 'current_mA', 'peak_power', 'Current (mA)', 'Peak Power (mW)', 
                       "Single Point Plot of Current vs Peak Power", "Single Point Current vs Peak Power")
+    
+
 
 if __name__ == "__main__":
     mode = ask_selection_mode()

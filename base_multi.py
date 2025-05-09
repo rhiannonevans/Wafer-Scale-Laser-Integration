@@ -5,6 +5,9 @@ from tkinter.filedialog import askdirectory, askopenfilename
 import multi_select
 import process_csv
 import extract
+import multi_osa
+import multi_wlm
+import multi_LIV
 
 
 def main():
@@ -61,11 +64,17 @@ def main():
             print("Invalid processing mode selection. Exiting.")
             return
         
+        if selection_choice == '1':
+            files_to_run = []
+        
         for current_root, dirs, files in os.walk(parent_path):
             for file in files:
                 if file.endswith(".csv"):
                     file_path = os.path.join(current_root, file)
                     file_base_name = os.path.splitext(file)[0]
+                    if selection_choice == '1':
+                        files_to_run.append(file_base_name)
+
                     if selection_choice == '2' and file_base_name not in files_to_run:
                         print(f"Skipping file (unselected):  {file_base_name}")
                         continue
@@ -82,7 +91,12 @@ def main():
         if compare_choice and compare_choice.strip().lower() == 'y':
             try:
                 dict = extract.setup_compdictionaries()
-                extract.iterate_files(dict, parent_path, '1', selected_files=files_to_run)
+                extract.iterate_files(dict, parent_path, selection_choice, files_to_run)
+                if process_mode == 'osa':
+                    multi_osa.plot_scatter(dict, 'peak_power_I', 'peak_power', "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison")
+                else:
+                    multi_wlm.plot_scatter(dict, 'peak_power_I', 'peak_power', "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison")
+                
                 print("Iterated files successfully.")
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
