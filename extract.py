@@ -90,13 +90,11 @@ def plot_osa(data_dict, folder_path):
     plt.title('Peak Power - Assoc Wavelength')
     
     print("Plot 2 successful - peak power vs wl")
-
-  
-    plt.show()
     # Save the plot to the specified folder
     plot_path = os.path.join(folder_path, '_osa_plots.png')
     plt.savefig(plot_path)
     print(f"Plots saved to {plot_path}")
+    plt.close()  # Close the plot to avoid displaying it again
 
 def plot_wlm(data_dict, folder_path):
     # Plotting function for WLM data.
@@ -145,10 +143,11 @@ def plot_wlm(data_dict, folder_path):
     print("Plot 3 successful - thresh current vs peak power")
 
   
-    plt.show()
+    #plt.show()
     # Save the plot to the specified folder
     plot_path = os.path.join(folder_path, '_wlm_plots.png')
     plt.savefig(plot_path)
+    plt.close()  # Close the plot to avoid displaying it again
     print(f"Plots saved to {plot_path}")
 
 def plot_liv(data_dict, folder_path):
@@ -185,9 +184,7 @@ def plot_liv(data_dict, folder_path):
     
     # print("Plot 2 successful - peak power vs threshold current")
 
-  
-    plt.show()
-    # Save the plot to the specified folder
+      # Save the plot to the specified folder
     plot_path = os.path.join(folder_path, '_liv_plots.png')
     plt.savefig(plot_path)
     print(f"Plots saved to {plot_path}")
@@ -220,20 +217,28 @@ def setup_compdictionaries():
     }
     return comp_dict
 
-def update_osa_dict(comp_dict, data, file_path):
+def update_osa_dict(comp_dict, data):
     # Update the OSA dictionary with data from the .mat file.
     if 'peak_power' in data:
         arr = data['peak_power'].flatten()
         comp_dict["osa"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)
+        print("Saved peak power")
+        print(comp_dict["osa"]["peak_power"])
     if 'peak_power_I' in data:
         arr = data['peak_power_I'].flatten()
         comp_dict["osa"]["peak_power_I"].append(float(np.max(arr)) if arr.size > 0 else None)
+        print("Saved peak power current")
+        print(comp_dict["osa"]["peak_power_I"])
     if 'peak_power_wl' in data: 
         arr = data['peak_power_wl'].flatten()
         comp_dict["osa"]["peak_power_wl"].append(float(np.max(arr)) if arr.size > 0 else None)
+        print("Saved peak power wl")
+        print(comp_dict["osa"]["peak_power_wl"])
     if 'peak_power_temp' in data:
         arr = data['peak_power_temp'].flatten()
         comp_dict["osa"]["peak_power_temp"].append(float(np.max(arr)) if arr.size > 0 else None)
+        print("Saved peak power temp")
+        print(comp_dict["osa"]["peak_power_temp"])
 
 def update_wlm_dict(comp_dict, data, file_path):
     # Update the WLM dictionary with data from the .mat file.
@@ -253,6 +258,7 @@ def update_wlm_dict(comp_dict, data, file_path):
         arr = data['peak_power_V'].flatten()
         comp_dict["wlm"]["peak_power_V"].append(float(np.max(arr)) if arr.size > 0 else None)
 
+
 def update_liv_dict(comp_dict, data, file_path):
     # Update the liv dictionary with data from the .mat file.
     if 'threshold_currents' in data:
@@ -267,6 +273,7 @@ def update_liv_dict(comp_dict, data, file_path):
     if 'peak_power_V' in data:
         arr = data['peak_power_V'].flatten()
         comp_dict["liv"]["peak_power_V"].append(float(np.max(arr)) if arr.size > 0 else None)
+
 
 def get_IDtag(file):
     file_base_name = os.path.splitext(file)[0]
@@ -302,33 +309,34 @@ def update(comp_dict, data, file_name):
     elif 'liv' in file_name:
         update_liv_dict(comp_dict, data, file_name)
 
-def iterate_files(dictionaries, parent_path, selection_mode = '1', selected_files = []):
+def iterate_files(parent_path, selection_mode='1', selected_files=None):
+    dictionaries = setup_compdictionaries()
     for current_root, dirs, files in os.walk(parent_path):
-                for file in files:
-                    if file.endswith(".mat"):
-                        file_path = os.path.join(current_root, file)
-                        file_base_name = os.path.splitext(file)[0]
-                        IDtag = get_IDtag(file)
-                        if selection_mode == '2' and file_base_name not in selected_files:
-                            print(f"Skipping file (not selected): {file_path}")
-                            continue
-                        try:
-                            if "osa" in file.lower():
-                                dictionaries["osa"]["IDtag"].append(IDtag)
-                                data = extract_osa(file_path)
-                                update_osa_dict(dictionaries, data, file_path)
-                            elif "wlm" in file.lower():
-                                dictionaries["wlm"]["IDtag"].append(IDtag)
-                                data = extract_wlm(file_path)
-                                update_wlm_dict(dictionaries, data, file_path)
-                            elif "liv" in file.lower():
-                                dictionaries["liv"]["IDtag"].append(IDtag)
-                                data = extract_liv(file_path)
-                                print("liv not functional yet")
-                        except Exception as e:
-                            # Print the full file name and a summary of the error, then continue.
-                            print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
-
+        for file in files:
+            if file.endswith(".mat"):
+                file_path = os.path.join(current_root, file)
+                file_base_name = os.path.splitext(file)[0]
+                IDtag = get_IDtag(file)
+                if selection_mode == '2' and selected_files is not None and file_base_name not in selected_files:
+                    print(f"Skipping file (not selected): {file_path}")
+                    continue
+                try:
+                    print(f"Processing file: {file_path}")
+                    if "osa" in file.lower():
+                        dictionaries['osa']["IDtag"].append(IDtag)
+                        data = extract_osa(file_path)
+                        update_osa_dict(dictionaries, data)
+                    elif "wlm" in file.lower():
+                        dictionaries['wlm']['IDtag'].append(IDtag)
+                        data = extract_wlm(file_path)
+                        update_wlm_dict(dictionaries, data, file_path)
+                    elif "liv" in file.lower():
+                        dictionaries["liv"]["IDtag"].append(IDtag)
+                        data = extract_liv(file_path)
+                        update_liv_dict(dictionaries, data, file_path)
+                except Exception as e:
+                    print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
+    return dictionaries
 
  
 def main():

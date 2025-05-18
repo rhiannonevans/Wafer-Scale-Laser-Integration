@@ -14,6 +14,7 @@ def main():
     # Initialize Tkinter and hide the root window.
     root = Tk()
     root.withdraw()
+    processALL = True #True to process from csv, False to process from mat files
 
     try:
         # Ask whether to process a folder or a single file.
@@ -67,38 +68,47 @@ def main():
         if selection_choice == '1':
             files_to_run = []
         
-        for current_root, dirs, files in os.walk(parent_path):
-            for file in files:
-                if file.endswith(".csv"):
-                    file_path = os.path.join(current_root, file)
-                    file_base_name = os.path.splitext(file)[0]
-                    if selection_choice == '1':
-                        files_to_run.append(file_base_name)
+        if processALL:
+            for current_root, dirs, files in os.walk(parent_path):
+                for file in files:
+                    if file.endswith(".csv"):
+                        file_path = os.path.join(current_root, file)
+                        file_base_name = os.path.splitext(file)[0]
+                        if selection_choice == '1':
+                            files_to_run.append(file_base_name)
 
-                    if selection_choice == '2' and file_base_name not in files_to_run:
-                        print(f"Skipping file (unselected):  {file_base_name}")
-                        continue
-                    else:
-                        try:
-                            process_csv.process_file(file_path, process_mode, base_folder=parent_path)
-                        except Exception as e:
-                            # Print the full file name and a summary of the error, then continue.
-                            print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
+                        if selection_choice == '2' and file_base_name not in files_to_run:
+                            print(f"Skipping file (unselected):  {file_base_name}")
+                        else:
+                            try:
+                                process_csv.process_file(file_path, process_mode, base_folder=parent_path)
+                            except Exception as e:
+                                # Print the full file name and a summary of the error, then continue.
+                                print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")
+        else:
+            for current_root, dirs, files in os.walk(parent_path):
+                for file in files:
+                    if file.endswith(".csv"):
+                        file_path = os.path.join(current_root, file)
+                        file_base_name = os.path.splitext(file)[0]
+                        if selection_choice == '1':
+                            files_to_run.append(file_base_name)
 
         # Ask the user if they would like to compare the files.
         compare_choice = simpledialog.askstring("Compare Files", 
                         "Would you like to compare the processed files? (y/n):")
         if compare_choice and compare_choice.strip().lower() == 'y':
             try:
-                dict = extract.setup_compdictionaries()
-                extract.iterate_files(dict, parent_path, selection_choice, files_to_run)
-                print(dict)
+                dataD = extract.iterate_files(parent_path, selection_choice, files_to_run)
+                print(dataD)
+                print(dataD['osa'])
                 if process_mode == 'osa':
-                    multi_osa.plot_scatter(dict, 'peak_power_I', 'peak_power', "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison")
+                    print("Plotting current power comparison...")
+                    multi_osa.plot_scatter2(dataD["osa"]["peak_power_I"], dataD["osa"]["peak_power"], "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    print("Plotting wl power comparison...")
+                    multi_osa.plot_scatter2(dataD['osa']["peak_power_wl"], dataD["osa"]["peak_power"], "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
                 else:
-                    multi_wlm.plot_scatter(dict, 'peak_power_I', 'peak_power', "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison")
-                
-                print("Iterated files successfully.")
+                    print("Plotting only for OSA currently")                
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
     finally:

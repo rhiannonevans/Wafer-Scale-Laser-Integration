@@ -53,7 +53,7 @@ def process_file(file_path, process_mode, base_folder=None):
     """
     file_name = os.path.basename(file_path)
     file_size = os.path.getsize(file_path)
-    osa_condition = "osa" in file_name.lower() or file_size > SIZE_THRESHOLD
+    osa_condition = "OSA" in file_name.lower() or file_size > SIZE_THRESHOLD
     output_folder = create_output_folder(file_path, base_folder)
 
     if process_mode == "osa":
