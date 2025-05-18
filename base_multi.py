@@ -92,6 +92,7 @@ def main():
             try:
                 dict = extract.setup_compdictionaries()
                 extract.iterate_files(dict, parent_path, selection_choice, files_to_run)
+                print(dict)
                 if process_mode == 'osa':
                     multi_osa.plot_scatter(dict, 'peak_power_I', 'peak_power', "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison")
                 else:
