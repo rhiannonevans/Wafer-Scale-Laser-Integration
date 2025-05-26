@@ -241,14 +241,14 @@ def process_other(file_path_str, output_folder=None):
             fig, ax = plt.subplots()
             ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
             ax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+            #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+            #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
             fig1, ax1 = plt.subplots()
             ax1.plot(fcurrent, logged_ch, color='black', marker='o', label=f"Channel {i}")
             ax1.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+            #ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+            #ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
             #ax.set_xticks(i_ticks)
             #ax.set_xticklabels(i_ticks)
@@ -307,8 +307,8 @@ def process_other(file_path_str, output_folder=None):
         ivax.set_xlabel("Current (mA)")
         ivax.set_ylabel("Voltage (V)")
         ivax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-        ivax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-        ivax.axhline(y=peak_power_V, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+        #ivax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+        #ivax.axhline(y=peak_power_V, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
 
        # ivax.set_xticks(i_ticks_IV)
@@ -362,8 +362,8 @@ def process_other(file_path_str, output_folder=None):
         ax.set_ylabel("Wavelength (nm)")
         ax.grid(True)
 
-        ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-        ax.axhline(y=peak_power_WL, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+        #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+        #ax.axhline(y=peak_power_WL, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
 
         # Save the WL vs current plot as an SVG file in the output folder

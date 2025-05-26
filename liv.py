@@ -76,7 +76,9 @@ def process_liv(file_path_str, output_folder=None):
      return
 
     print("Current data extracted")
-
+    # Extract voltage and temperature data - make None if not found to handle errors
+    voltage = df.loc[indices["voltage"]] if indices["voltage"] is not None else None
+    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
     if voltage is not None and temperature is not None:
         voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
         temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
@@ -207,7 +209,7 @@ def process_liv(file_path_str, output_folder=None):
     fig2, ax2 = plt.subplots()
     ax2.plot(fcurrent, voltage, color='black', marker='o', label="IV Curve")
     ax2.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-    ax2.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+    #ax2.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
     ax2.set_title(f"Current vs Voltage")
     ax2.set_xlabel("Current (mA)")
     ax2.set_ylabel("Voltage (V)")
@@ -256,14 +258,14 @@ def process_liv(file_path_str, output_folder=None):
             fig, ax = plt.subplots()
             ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
             ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+            #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+            #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
             fig1, ax1 = plt.subplots()
             ax1.plot(fcurrent, logged_ch, color='black', marker='o', label=f"Channel {i}")
             ax1.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+            #ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+            #ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
 
             #ax.set_xticks(i_ticks)

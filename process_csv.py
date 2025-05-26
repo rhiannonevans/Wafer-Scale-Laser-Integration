@@ -1,5 +1,5 @@
 import osa
-import wlm
+import liv
 import os
 from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename
@@ -66,7 +66,7 @@ def process_file(file_path, process_mode, base_folder=None):
     elif process_mode == "liv":
         if not osa_condition:
             print(f"Processing {file_path} as LIV")
-            wlm.process_other(file_path, output_folder=output_folder)
+            liv.process_liv(file_path, output_folder=output_folder)
         else:
             print(f"Skipping {file_path}: qualifies as OSA, not LIV. Skipping...")
             
@@ -76,7 +76,7 @@ def process_file(file_path, process_mode, base_folder=None):
             osa.sweep_osa(file_path, output_folder=output_folder)
         else:
             print(f"Processing {file_path} as LIV (both mode)")
-            wlm.process_other(file_path, output_folder=output_folder)
+            liv.process_liv(file_path, output_folder=output_folder)
     else:
         raise ValueError("Invalid processing mode specified.")
 
@@ -86,6 +86,7 @@ def main():
     # Initialize Tkinter and hide the root window.
     root = Tk()
     root.withdraw()
+    #process_mode = 'liv' #FOR TROUBLESHOOTING PURPOSES, DEFAULT TO LIV
 
     try:
         # Ask whether to process a folder or a single file.
@@ -117,7 +118,7 @@ def main():
             if processing_choice == '1':
                 process_mode = "osa"
             elif processing_choice == '2':
-                process_mode = "wlm"
+                process_mode = "liv"
             elif processing_choice == '3':
                 process_mode = "both"
             else:
@@ -151,7 +152,7 @@ def main():
                 if "osa" in file_name.lower() or file_size > SIZE_THRESHOLD:
                     process_mode = "osa"
                 else:
-                    process_mode = "wlm"
+                    process_mode = "liv"
                 # For file mode, base_folder is left as None.
                 process_file(file_path, process_mode, base_folder=None)
             except Exception as e:
