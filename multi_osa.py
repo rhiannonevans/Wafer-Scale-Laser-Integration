@@ -38,19 +38,16 @@ def gather_mat_data(folder_paths):
                     data.append((mat_data, file))
     return data
 
-def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title, newVer = False, parent_path = None):
-        plot_path = None  # Initialize plot_path to avoid NameError
+def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title):
+        
         colormap = cm.get_cmap('inferno')
-        plt.close('all')
         plt.figure()
         num_files = len(data)
-        print(f"Number of files: {num_files}")
         for i, (mat_data, filename) in enumerate(data):
             if x_key in mat_data and y_key in mat_data:
                 x_data = mat_data[x_key].flatten()
                 y_data = mat_data[y_key].flatten()
-                #color = colormap(0.2 + 0.6 * (i / max(num_files - 1, 1)))  # Avoid the lightest colors
-                color = colormap(i / num_files)
+                color = colormap(0.2 + 0.6 * (i / max(num_files - 1, 1)))  # Avoid the lightest colors
 
                 # Extract label after "OSA_", fallback to filename without extension
                 if "OSA_" in filename:
@@ -58,10 +55,10 @@ def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title, newVer
                 else:
                     label = os.path.splitext(filename)[0]  # Use filename without extension
                 
-                plt.scatter(x_data, y_data, cmap=colormap, color=color, label=label, alpha=0.7, edgecolors='none', s=50)
+                plt.scatter(x_data, y_data, color=color, label=label)
             else:
                 print(f"{filename} missing '{x_key}' or '{y_key}'")
-        print("Created plot")
+
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
@@ -70,20 +67,11 @@ def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title, newVer
         plt.subplots_adjust(right=0.75)
 
         # Save the plot
-        
-        if newVer:
-            if parent_path:
-                plot_path1 = os.path.join(os.path.dirname(parent_path), f"{x_key}_vs_{y_key}.png")
-            else:
-                print("Error: parent_path is None. Cannot determine plot save location.")
-                return
-            plot_path1 = os.path.join(os.path.dirname(parent_path), f"{x_key}_vs_{y_key}.png")
-            plt.savefig(plot_path1, bbox_inches='tight') 
-            #plt.close()  # Close the plot to avoid displaying it again   
-        elif plot_path:
-            plot_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")], title=f"Save {save_title} Plot")
+        plot_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")], title=f"Save {save_title} Plot")
+        if plot_path:
             plt.savefig(plot_path, bbox_inches='tight')
-            plt.show()  # Show the plot after saving
+        plt.show()  # Show the plot after saving
+
 
 def plot_scatter2(data1, data2, x_label, y_label, title, save_title, parent_path = None):
         plt.figure()
