@@ -1,3 +1,27 @@
+"""
+Stability Analysis and Aggregated Plotting for Wafer-Scale Laser Integration
+----------------------------------------------------------------------------
+
+Date: 2025-05-31
+
+Description:
+-------------
+This script analyzes and visualizes laser sweep data from multiple experimental folders.
+It aggregates sweeps, normalizes and inverts power channels, and plots voltage, temperature,
+and power characteristics for multiple datasets using different colormaps for comparison.
+The script supports custom step sizes for temperature and voltage extraction and saves all
+resulting figures to the specified output directory.
+
+Colormap and Label Mapping:
+- Inferno: Aggregated data_folder + datafolder2 ("500Sweeps_0.05")
+- Viridis: Aggregated datafolder3 + datafolder4 ("200Sweeps_0.1")
+- Cividis: Aggregated datafolder5 + datafolder6 + datafolder7 ("100Sweeps_0.02")
+
+Author: [Your Name or Lab]
+----------------------------------------------------------------------------
+
+"""
+
 import os
 import re
 import numpy as np
