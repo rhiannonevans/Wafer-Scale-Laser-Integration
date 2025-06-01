@@ -1,9 +1,11 @@
-# author: sheri
+# author: sheri and co-pilot
+# date: 2025-05-31
 # Description: This script processes OSA and LIV .mat files to compare benchtop and on-chip laser spectra.
 # It generates a plot of wavelength vs normalized power, annotates FSRs, and saves the plot and data.
 # After the first plot, the user is prompted to perform quality factor (Q) analysis using Lorentzian fits.
 # If accepted, the script overlays Lorentzian fits and Q values for all peaks, and shows residuals.
-# Current date and time: 2025-05-31
+#the Q analysis needs to be fine tuned more
+
 
 import os
 from datetime import datetime
@@ -15,6 +17,75 @@ from scipy.signal import find_peaks
 import lorentzfit
 print("Using lorentzfit from:", lorentzfit.__file__)
 from lorentzfit import lorentzfit  # Make sure lorentzfit.py is in your PYTHONPATH
+
+def analyze_peak_qfactor(x, y, peak_idx, window=10, color='r', label='Data', plot_title='Lorentzian Fit'):
+    left = max(0, peak_idx - window)
+    right = min(len(x), peak_idx + window + 1)
+    peak_x = x[left:right]
+    peak_y = y[left:right]
+    slope = (peak_y[-1] - peak_y[0]) / (peak_x[-1] - peak_x[0])
+    baseline = slope * (peak_x - peak_x[0]) + peak_y[0]
+    normalized_curve = peak_y - baseline
+    normalized_curve_lin = normalized_curve - np.min(normalized_curve)
+    if np.max(normalized_curve_lin) > 0:
+        normalized_curve_lin = normalized_curve_lin / np.max(normalized_curve_lin)
+    try:
+        yfit, params, resnorm, residual, jacobian = lorentzfit(
+            peak_x, normalized_curve_lin, nparams='3c'
+        )
+    except Exception as e:
+        print(f"Fit failed: {e}")
+        return None
+    x0 = params[1]
+    gamma = np.sqrt(params[2]) * 2  # FWHM = 2*sqrt(gamma)
+    Q_factor = x0 / gamma if gamma != 0 else np.nan
+    R_sq = 1 - np.var(normalized_curve_lin - yfit) / np.var(normalized_curve_lin)
+    plt.figure(figsize=(7, 6))
+    plt.plot(peak_x, normalized_curve_lin, '.', color=color, label=label)
+    plt.plot(peak_x, yfit, '-', color='b', label='Lorentz fit')
+    plt.axhline(0.5, color='k', linewidth=2, label='Normalized Power=0.5')
+    plt.xlabel('Wavelength [nm]', fontsize=14)
+    plt.ylabel('Normalized Linear Power', fontsize=14)
+    plt.title(plot_title + f"\nQ={Q_factor:.2f}, R²={R_sq:.2f}")
+    plt.legend()
+    plt.ylim([0, 1.01])
+    plt.grid(True)
+    plt.show()
+    plt.figure(figsize=(7, 6))
+    plt.plot(yfit, residual, '.', linewidth=2)
+    plt.axhline(0, color='k')
+    plt.xlabel('Fit Value')
+    plt.ylabel('Residuals')
+    plt.title('Residual Plot for Linear Scale')
+    plt.grid(True)
+    plt.show()
+    print(f"Q-factor: {Q_factor:.2f}")
+    print(f"R^2: {R_sq:.2f}")
+    return Q_factor, R_sq, params, resnorm, residual, jacobian
+
+def analyze_peak_qfactor_overlay(x, y, peak_idx, window=10):
+    left = max(0, peak_idx - window)
+    right = min(len(x), peak_idx + window + 1)
+    peak_x = x[left:right]
+    peak_y = y[left:right]
+    slope = (peak_y[-1] - peak_y[0]) / (peak_x[-1] - peak_x[0])
+    baseline = slope * (peak_x - peak_x[0]) + peak_y[0]
+    normalized_curve = peak_y - baseline
+    normalized_curve_lin = normalized_curve - np.min(normalized_curve)
+    if np.max(normalized_curve_lin) > 0:
+        normalized_curve_lin = normalized_curve_lin / np.max(normalized_curve_lin)
+    try:
+        yfit, params, resnorm, residual, jacobian = lorentzfit(
+            peak_x, normalized_curve_lin, nparams='3c'
+        )
+    except Exception as e:
+        print(f"Fit failed: {e}")
+        return None, None, None, None, None, None, None
+    x0 = params[1]
+    gamma = np.sqrt(params[2]) * 2  # FWHM = 2*sqrt(gamma)
+    Q_factor = x0 / gamma if gamma != 0 else np.nan
+    R_sq = 1 - np.var(normalized_curve_lin - yfit) / np.var(normalized_curve_lin)
+    return peak_x, normalized_curve_lin, yfit, Q_factor, R_sq, residual, params
 
 # Print current date and time for logging
 print("Script run at:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -61,13 +132,23 @@ if 'polyfit_peakWL_vs_I_deg2_coeffs' not in osaData:
 livFiles = [f for f in os.listdir(livFolder) if f.endswith('.mat')]
 if not livFiles:
     raise FileNotFoundError("No .mat files found in the selected LIV folder.")
+## comment the following if you are using the eval_system data
+# Load the first LIV file
+# livData = scipy.io.loadmat(os.path.join(livFolder, livFiles[0]))  # Load the first file
+# if 'current' not in livData or 'channel_3' not in livData:
+#     raise KeyError("'current' or 'channel3' data not found in the selected LIV file.")
 
+# current = np.array(livData['current']).flatten()  # Current data
+# channel3 = np.array(livData['channel_3']).flatten()  # Power data
+
+# Load the eval_system data
 livData = scipy.io.loadmat(os.path.join(livFolder, livFiles[0]))  # Load the first file
-if 'current' not in livData or 'channel_3' not in livData:
-    raise KeyError("'current' or 'channel3' data not found in the selected LIV file.")
+if 'current' not in livData or 'power4' not in livData:
+     raise KeyError("'current' or 'power4' data not found in the selected LIV file.")
 
 current = np.array(livData['current']).flatten()  # Current data
-channel3 = np.array(livData['channel_3']).flatten()  # Power data
+
+channel3 =-np.array(livData['power4']).flatten()  # Power data
 
 # Filter current data between 20 mA and 50 mA
 validIdx = (current >= 20) & (current <= 50)
@@ -314,3 +395,4 @@ if do_q_analysis:
     plt.ylim([0, 1.25])
     plt.grid(True)
     plt.show()
+

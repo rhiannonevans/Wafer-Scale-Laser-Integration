@@ -2,7 +2,7 @@
 Stability Analysis and Aggregated Plotting for Wafer-Scale Laser Integration
 ----------------------------------------------------------------------------
 
-Date: 2025-05-31
+Date: 2025-05-30
 
 Description:
 -------------
@@ -12,12 +12,7 @@ and power characteristics for multiple datasets using different colormaps for co
 The script supports custom step sizes for temperature and voltage extraction and saves all
 resulting figures to the specified output directory.
 
-Colormap and Label Mapping:
-- Inferno: Aggregated data_folder + datafolder2 ("500Sweeps_0.05")
-- Viridis: Aggregated datafolder3 + datafolder4 ("200Sweeps_0.1")
-- Cividis: Aggregated datafolder5 + datafolder6 + datafolder7 ("100Sweeps_0.02")
-
-Author: [Your Name or Lab]
+Author: Sheri J. Chowdhury
 ----------------------------------------------------------------------------
 
 """

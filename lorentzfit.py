@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+#author: sheri
+#date: 2025-05-31
+# This module provides a Lorentzian curve fitting function using scipy's curve_fit.
+# It supports various parameterizations and can return diagnostics like residuals and Jacobian.
+
+
 import numpy as np
 from scipy.optimize import curve_fit
 
