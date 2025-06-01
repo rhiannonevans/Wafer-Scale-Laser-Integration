@@ -1,9 +1,23 @@
+# author: sheri
+# Description: This script processes OSA and LIV .mat files to compare benchtop and on-chip laser spectra.
+# It generates a plot of wavelength vs normalized power, annotates FSRs, and saves the plot and data.
+# After the first plot, the user is prompted to perform quality factor (Q) analysis using Lorentzian fits.
+# If accepted, the script overlays Lorentzian fits and Q values for all peaks, and shows residuals.
+# Current date and time: 2025-05-31
+
 import os
-from tkinter import Tk, filedialog
+from datetime import datetime
+from tkinter import Tk, filedialog, messagebox
 import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+import lorentzfit
+print("Using lorentzfit from:", lorentzfit.__file__)
+from lorentzfit import lorentzfit  # Make sure lorentzfit.py is in your PYTHONPATH
+
+# Print current date and time for logging
+print("Script run at:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 # Initialize the Tkinter root window
 root = Tk()
@@ -49,11 +63,11 @@ if not livFiles:
     raise FileNotFoundError("No .mat files found in the selected LIV folder.")
 
 livData = scipy.io.loadmat(os.path.join(livFolder, livFiles[0]))  # Load the first file
-if 'current' not in livData or 'channel3' not in livData:
+if 'current' not in livData or 'channel_3' not in livData:
     raise KeyError("'current' or 'channel3' data not found in the selected LIV file.")
 
 current = np.array(livData['current']).flatten()  # Current data
-channel3 = np.array(livData['channel3']).flatten()  # Power data
+channel3 = np.array(livData['channel_3']).flatten()  # Power data
 
 # Filter current data between 20 mA and 50 mA
 validIdx = (current >= 20) & (current <= 50)
@@ -179,3 +193,124 @@ print(f"Figure saved to {figureFilePath}")
 
 # Show the plot
 plt.show()
+
+# Prompt user for Q factor analysis
+do_q_analysis = messagebox.askyesno("Q Factor Analysis", "Do you want to perform quality factor (Q) analysis using Lorentzian fits?")
+
+if do_q_analysis:
+    # --- Perform Q factor analysis for all peaks ---
+    # Analyze all peaks in Benchtop data
+    for i, peak_idx in enumerate(benchtopPeaks):
+        analyze_peak_qfactor(
+            wavelengthBenchtopLimited, powerBenchtopNormalized, peak_idx,
+            window=10, color='r', label=f'Benchtop Peak {i+1}',
+            plot_title=f'Benchtop Peak {i+1} Lorentzian Fit'
+        )
+
+    # Analyze all peaks in On-Chip data
+    for i, peak_idx in enumerate(onChipPeaks):
+        analyze_peak_qfactor(
+            wavelengthOnChip, powerFilteredNormalized, peak_idx,
+            window=6, color='purple', label=f'On-Chip Peak {i+1}',
+            plot_title=f'On-Chip Peak {i+1} Lorentzian Fit'
+        )
+
+    # --- Overlay plot for Benchtop ---
+    plt.figure(figsize=(12, 8))
+    plt.plot(wavelengthBenchtopLimited, powerBenchtopNormalized, color='red', linestyle='--', linewidth=1.5, label='Benchtop Laser')
+    q_labels = []
+    for i, peak_idx in enumerate(benchtopPeaks):
+        px, norm_y, yfit, Q, R2, residual, params = analyze_peak_qfactor_overlay(
+            wavelengthBenchtopLimited, powerBenchtopNormalized, peak_idx, window=10)
+        if px is not None:
+            plt.plot(px, yfit, 'b:', linewidth=2, label='Lorentz fit' if i == 0 else None)
+            peak_wl = px[np.argmax(norm_y)]
+            peak_val = np.max(norm_y)
+            plt.annotate(f"Q={Q:.0f}", (peak_wl, peak_val+0.05), color='blue', fontsize=12, ha='center')
+            q_labels.append((peak_wl, Q))
+    plt.xlabel('Wavelength (nm)', fontsize=16)
+    plt.ylabel('Normalized Power', fontsize=16)
+    plt.title('Benchtop Peaks with Lorentzian Fits and Q Factors', fontsize=14)
+    plt.legend(loc='upper right', fontsize=13)
+    plt.ylim([0, 1.2])
+    plt.grid(True)
+    plt.show()
+
+    # --- Overlay plot for On-Chip ---
+    plt.figure(figsize=(12, 8))
+    plt.plot(wavelengthOnChip, powerFilteredNormalized, color='purple', linestyle='-', linewidth=1.5, label='On-Chip Laser')
+    for i, peak_idx in enumerate(onChipPeaks):
+        px, norm_y, yfit, Q, R2, residual, params = analyze_peak_qfactor_overlay(
+            wavelengthOnChip, powerFilteredNormalized, peak_idx, window=6)
+        if px is not None:
+            plt.plot(px, yfit, 'g:', linewidth=2, label='Lorentz fit' if i == 0 else None)
+            peak_wl = px[np.argmax(norm_y)]
+            peak_val = np.max(norm_y)
+            plt.annotate(f"Q={Q:.0f}", (peak_wl, peak_val+0.05), color='green', fontsize=12, ha='center')
+    plt.xlabel('Wavelength (nm)', fontsize=16)
+    plt.ylabel('Normalized Power', fontsize=16)
+    plt.title('On-Chip Peaks with Lorentzian Fits and Q Factors', fontsize=14)
+    plt.legend(loc='upper right', fontsize=13)
+    plt.ylim([0, 1.2])
+    plt.grid(True)
+    plt.show()
+
+    # --- Residuals plots ---
+    for i, peak_idx in enumerate(benchtopPeaks):
+        px, norm_y, yfit, Q, R2, residual, params = analyze_peak_qfactor_overlay(
+            wavelengthBenchtopLimited, powerBenchtopNormalized, peak_idx, window=10)
+        if px is not None:
+            plt.figure(figsize=(7, 5))
+            plt.plot(yfit, residual, '.', linewidth=2)
+            plt.axhline(0, color='k')
+            plt.xlabel('Fit Value')
+            plt.ylabel('Residuals')
+            plt.title(f'Benchtop Peak {i+1} Residuals (Q={Q:.0f})')
+            plt.grid(True)
+            plt.show()
+
+    for i, peak_idx in enumerate(onChipPeaks):
+        px, norm_y, yfit, Q, R2, residual, params = analyze_peak_qfactor_overlay(
+            wavelengthOnChip, powerFilteredNormalized, peak_idx, window=6)
+        if px is not None:
+            plt.figure(figsize=(7, 5))
+            plt.plot(yfit, residual, '.', linewidth=2)
+            plt.axhline(0, color='k')
+            plt.xlabel('Fit Value')
+            plt.ylabel('Residuals')
+            plt.title(f'On-Chip Peak {i+1} Residuals (Q={Q:.0f})')
+            plt.grid(True)
+            plt.show()
+
+    # --- Combined overlay plot for Benchtop and On-Chip with Lorentzian fits and Q annotation ---
+    plt.figure(figsize=(14, 8))
+    plt.plot(wavelengthBenchtopLimited, powerBenchtopNormalized, color='red', linestyle='--', linewidth=1.5, label='Benchtop Laser')
+    plt.plot(wavelengthOnChip, powerFilteredNormalized, color='purple', linestyle='-', linewidth=1.5, label='On-Chip Laser')
+
+    # Overlay Benchtop Lorentzian fits and annotate Q
+    for i, peak_idx in enumerate(benchtopPeaks):
+        px, norm_y, yfit, Q, R2, residual, params = analyze_peak_qfactor_overlay(
+            wavelengthBenchtopLimited, powerBenchtopNormalized, peak_idx, window=10)
+        if px is not None:
+            plt.plot(px, yfit, 'b:', linewidth=2, label='Benchtop Lorentz fit' if i == 0 else None)
+            peak_wl = px[np.argmax(norm_y)]
+            peak_val = np.max(norm_y)
+            plt.annotate(f"Q={Q:.0f}", (peak_wl, peak_val+0.08), color='blue', fontsize=12, ha='center')
+
+    # Overlay On-Chip Lorentzian fits and annotate Q
+    for i, peak_idx in enumerate(onChipPeaks):
+        px, norm_y, yfit, Q, R2, residual, params = analyze_peak_qfactor_overlay(
+            wavelengthOnChip, powerFilteredNormalized, peak_idx, window=6)
+        if px is not None:
+            plt.plot(px, yfit, 'g:', linewidth=2, label='On-Chip Lorentz fit' if i == 0 else None)
+            peak_wl = px[np.argmax(norm_y)]
+            peak_val = np.max(norm_y)
+            plt.annotate(f"Q={Q:.0f}", (peak_wl, peak_val+0.08), color='green', fontsize=12, ha='center')
+
+    plt.xlabel('Wavelength (nm)', fontsize=16)
+    plt.ylabel('Normalized Power', fontsize=16)
+    plt.title('Benchtop & On-Chip Peaks with Lorentzian Fits and Q Factors', fontsize=15)
+    plt.legend(loc='upper right', fontsize=13)
+    plt.ylim([0, 1.25])
+    plt.grid(True)
+    plt.show()
