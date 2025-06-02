@@ -1,8 +1,8 @@
-#author: sheri
+#author: sheri and co-pilot
 #date: 2025-04-14
 # This script processes the data from a benchtop CSV file, extracts wavelength and channel data, converts power values from dBm to mW if requested, 
 # and saves the processed data to a .mat file.
-# It also generates a plot of wavelength vs channel power in mW and saves it as a PNG file.
+
 import os
 import numpy as np
 import pandas as pd
