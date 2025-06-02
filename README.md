@@ -70,4 +70,14 @@ EXAMPLE IMAGE
 
 
 ## MULTI-File / Comparison Processing:
+Run base_multi.py
 
+Opt to (1) run all files in a parent folder or (2) run only select files from a parent folder.
+
+(1) Select parent folder (script will process all files in the parent folder, it will search through subfolders as well)
+(3) Select parent folder from first window, submit and from the next window select (check boxes for) desired files.
+
+
+Choose to process files of type (1) "OSA" or (2) "LIV". 
+
+The following plots and characteristic data (for comparison), and a .mat file containing the organized data, will be saved to the parent folder.
