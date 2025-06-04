@@ -103,10 +103,19 @@ def main():
                 print(dataD)
                 print(dataD['osa'])
                 if process_mode == 'osa':
+                    # Aggregate data across all files before plotting
+                    peak_power_I = []
+                    peak_power = []
+                    peak_power_wl = []
+                    for file_data in dataD["osa"].values():
+                        if isinstance(file_data, dict):
+                            peak_power_I.extend(file_data.get("peak_power_I", []))
+                            peak_power.extend(file_data.get("peak_power", []))
+                            peak_power_wl.extend(file_data.get("peak_power_wl", []))
                     print("Plotting current power comparison...")
-                    multi_osa.plot_scatter2(dataD["osa"]["peak_power_I"], dataD["osa"]["peak_power"], "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    multi_osa.plot_scatter2(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting wl power comparison...")
-                    multi_osa.plot_scatter2(dataD['osa']["peak_power_wl"], dataD["osa"]["peak_power"], "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
+                    multi_osa.plot_scatter2(peak_power_wl, peak_power, "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
                 else:
                     print("Plotting only for OSA currently")                
             except Exception as e:

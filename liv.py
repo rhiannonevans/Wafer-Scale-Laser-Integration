@@ -12,7 +12,7 @@ def process_liv(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
-    import re
+    import threshold
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -50,6 +50,7 @@ def process_liv(file_path_str, output_folder=None):
         "channel 2": "2",
         "channel 3": "3",
         "channel 4": "4",
+        "channel 5": "5",
     }
 
     # Find indices where these terms occur
@@ -93,6 +94,7 @@ def process_liv(file_path_str, output_folder=None):
     ch2 = pd.to_numeric(df.loc[indices["channel 2"]],errors='coerce')  if indices["channel 2"] is not None else None
     ch3 = pd.to_numeric(df.loc[indices["channel 3"]],errors='coerce')  if indices["channel 3"] is not None else None
     ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
+    ch5 = pd.to_numeric(df.loc[indices["channel 5"]],errors='coerce')  if indices["channel 5"] is not None else None
 
     print("Extrated channel (power) data")
 
@@ -105,10 +107,11 @@ def process_liv(file_path_str, output_folder=None):
         if ch2 is not None: ch2 = ch2.mul(convert_const)
         if ch3 is not None: ch3 = ch3.mul(convert_const)
         if ch4 is not None: ch4 = ch4.mul(convert_const)
+        if ch5 is not None: ch5 = ch5.mul(convert_const)
 
     
     channels = []
-    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4] if ch is not None]
+    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5] if ch is not None]
     print("Channels found:", len(channels))
     print(channels)
 
@@ -145,9 +148,18 @@ def process_liv(file_path_str, output_folder=None):
             print(f"Saved channel {i}:")
             data_dict[f"log_channel_{i}"] = logged_ch
 
-            tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
-            threshold_Is.append(current[tidx])
-            print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
+            # Assumes there is no threshold if data starts above 0.2A - implies threshold has been passed
+            if current[0] >= 0.2:
+                print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
+                threshold_Is.append(0)
+                continue
+            else:
+                tidx = threshold.detect_trend_gradient(ch, current)[0] if threshold.detect_trend_gradient(ch, current) else None
+                if tidx is None:
+                    print(f"No threshold index found for channel {i}. Setting to 0.")
+                    continue
+                threshold_Is.append(current[tidx])
+                print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
             # if i == data_channel_index:
             #     tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
             #     print(f"Channel {i} used for threshold index:", tidx)

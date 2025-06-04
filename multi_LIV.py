@@ -44,7 +44,7 @@ def gather_mat_data(folder_paths):
     return data
 
 
-def plot_data(data):
+def plot_data(data, save_folder = "C:/Users/OWNER/Desktop/"):
     colormap = cm.get_cmap('inferno')
 
     def plot_line(data, x_key, y_key, x_label, y_label, title, save_title):
@@ -99,7 +99,7 @@ def plot_data(data):
 
         # Save the plot in the specified folder
         if data:
-            save_folder = r"C:\Users\jsheri1\Documents\A_Research\2024-02_Wafer-Scale\20250403_Shuksan_ANT_Light2025_WaferscaleMeasurements\Plots"
+            #save_folder = r"C:\Users\jsheri1\Documents\A_Research\2024-02_Wafer-Scale\20250403_Shuksan_ANT_Light2025_WaferscaleMeasurements\Plots"
             os.makedirs(save_folder, exist_ok=True)
             save_path = os.path.join(save_folder, f"{save_title}.png")
             plt.savefig(save_path, bbox_inches='tight')
@@ -131,6 +131,6 @@ if __name__ == "__main__":
 
     if folders:
         data = gather_mat_data(folders)
-        plot_data(data)
+        plot_data(data,parent_folder)
     else:
         print("No valid folders selected.")
