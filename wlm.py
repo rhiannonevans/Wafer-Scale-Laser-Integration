@@ -4,7 +4,7 @@
 # Expects a CSV with Current, Wavelength, Voltage, Temperature, and Channel (optional channels 0 through 4) data.
 # For comparison plots: Extracts threshold current, peak power, and associated current, wavelength, and voltage.
 # Generates LIV curves and other WLM data plots (like wl vs temp, wl vs current).
-# Saves original mW power data and log power data.
+# Saves original mW power data
 
 def process_other(file_path_str, output_folder=None):
     import os
@@ -108,16 +108,6 @@ def process_other(file_path_str, output_folder=None):
     ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
     ch5 = pd.to_numeric(df.loc[indices["channel 5"]],errors='coerce')  if indices["channel 5"] is not None else None
 
-    # Optionally, convert power data if provided in mW (0: already in dBm, 1: in mW)
-    is_mW = 0
-    convert_const = 10 * np.log(10)
-    if is_mW:
-        if ch0 is not None: ch0 = ch0.mul(convert_const)
-        if ch1 is not None: ch1 = ch1.mul(convert_const)
-        if ch2 is not None: ch2 = ch2.mul(convert_const)
-        if ch3 is not None: ch3 = ch3.mul(convert_const)
-        if ch4 is not None: ch4 = ch4.mul(convert_const)
-        if ch5 is not None: ch5 = ch5.mul(convert_const)
 
     channels = []
     channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5] if ch is not None]
@@ -152,9 +142,7 @@ def process_other(file_path_str, output_folder=None):
     threshold_Is = []
     for i, ch in enumerate(channels):
         data_dict[f"channel_{i}"] = ch
-        logged_ch = np.log(ch)
         print(f"Saved channel {i}:")
-        data_dict[f"log_channel_{i}"] = logged_ch
 
         # Assumes there is no threshold if data starts above 0.2A - implies threshold has been passed
         if current[0] >= 0.2:
@@ -254,12 +242,7 @@ def process_other(file_path_str, output_folder=None):
             #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
-            fig1, ax1 = plt.subplots()
-            ax1.plot(fcurrent, logged_ch, color='black', marker='o', label=f"Channel {i}")
-            ax1.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            #ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            #ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
-
+            
             #ax.set_xticks(i_ticks)
             #ax.set_xticklabels(i_ticks)
             #ax.set_yticks(ch_ticks)
@@ -268,12 +251,6 @@ def process_other(file_path_str, output_folder=None):
             ax.set_xlabel("Current (mA)")
             ax.set_ylabel("Power (mW)")
             ax.grid(True)
-
-            ax1.set_title(f"Current vs Log Power - Channel {i}")
-            ax1.set_xlabel("Current (mA)")
-            ax1.set_ylabel("Log Power (LOG(mW))")
-            ax1.grid(True)
-
 
             # Save the channel plot as an SVG file in the output folder
             svg_filename = base_name + f"_LI_channel{i}.svg"
@@ -286,18 +263,7 @@ def process_other(file_path_str, output_folder=None):
             save_path_png = os.path.join(save_dir, png_filename)
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
-
-            #save the log channel plot as an SVG file in the output folder
-            svg_filename1 = base_name + f"_LI_channel{i}_log.svg"
-            save_path_svg1 = os.path.join(save_dir, svg_filename1)
-            fig1.savefig(save_path_svg1, format="svg", bbox_inches="tight")
-            print(f"Saved channel {i} log plot to {save_path_svg1}")
-            # Optionally, close the figure: plt.close(fig)
-            # Save the channel plot as an PNG file in the output folder
-            png_filename1 = base_name + f"_LI_channel{i}_log.png"
-            save_path_png1 = os.path.join(save_dir, png_filename1)
-            fig1.savefig(save_path_png1, format="png", bbox_inches="tight")
-            print(f"Saved channel {i} log plot to {save_path_png1}")
+            plt.close(fig)  # Close the figure to free memory
 
     # Create and save the current vs voltage (IV) plot
     if current is not None and voltage is not None:

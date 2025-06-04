@@ -35,8 +35,8 @@ def process_file(file_path, process_mode, base_folder=None):
     """
     Process a single CSV file according to process_mode:
       - "osa": Process only if the file qualifies as OSA.
-      - "wlm": Process only if the file qualifies as WLM.
-      - "both": Process according to the file's qualification.
+      - "liv_wlm": Process only if the file qualifies as WLM or LIV.
+      - "all": Processes all valid files, regardless of type.
 
     A file qualifies for OSA if its name (case-insensitive) contains "osa".
     Outputs are saved to an output folder determined by create_output_folder.
@@ -73,6 +73,8 @@ def process_file(file_path, process_mode, base_folder=None):
         elif liv_condition:
             liv.process_liv(file_path, output_folder=output_folder)  # Uncomment to use LIV instead of WLM
             print(f"Processing {file_path} as LIV (all mode)")
+        else:
+            print(f"Skipping {file_path}: name must contain 'osa', 'liv', or 'wlm'. Skipping...")
     else:
         raise ValueError("Invalid processing mode specified.")
 
