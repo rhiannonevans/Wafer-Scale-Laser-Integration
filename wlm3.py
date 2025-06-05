@@ -5,7 +5,7 @@
 # Generates LIV curves.
 # Saves original mW power data and log power data.
 
-def process_liv(file_path_str, output_folder=None):
+def process_wlm(file_path_str, output_folder=None):
     import os
     import numpy as np
     import pandas as pd
@@ -45,6 +45,7 @@ def process_liv(file_path_str, output_folder=None):
         "current": "Current",
         "voltage": "Voltage",
         "temperature": "Temperature",
+        "wavelength": "Wavelength",
         "channel 0": "0",
         "channel 1": "1",
         "channel 2": "2",
@@ -74,25 +75,40 @@ def process_liv(file_path_str, output_folder=None):
     # Extract data rows from the DataFrame
     current = df.loc[indices["current"]] if indices["current"] is not None else None
     if indices["current"] is not None:
-     current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
-     print(current)
+        current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
+        print(current)
     else:
-     current = None
-     print("No current data found for LIV, aborting file...")
-     return
+        current = None
+        print("No current data found, aborting file...")
+        return
 
     print("Current data extracted")
     # Extract voltage and temperature data - make None if not found to handle errors
+    # Extract voltage data
     voltage = df.loc[indices["voltage"]] if indices["voltage"] is not None else None
-    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
-    if voltage is not None and temperature is not None:
+    if voltage is not None:
         voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
-        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
+        print("Voltage data extracted")
     else:
-        print("No Voltage, and/or Temperature data found. Invalid File.")
+        print("No Voltage data found. Invalid File.")
         return
-    print("Voltage and Temperature data extracted")
 
+    # Extract temperature data
+    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
+    if temperature is not None:
+        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
+        print("Temperature data extracted")
+    else:
+        print("No Temperature data found. Invalid File.")
+        return
+
+    wavelength = df.loc[indices["wavelength"]] if indices["wavelength"] is not None else None
+    if wavelength is not None:
+        wavelength = pd.to_numeric(df.loc[indices["wavelength"]], errors='coerce')
+        print("Wavelength data extracted")
+    else:
+        print("No Wavelength data found. Invalid File.")
+        return
 
     ch0 = pd.to_numeric(df.loc[indices["channel 0"]],errors='coerce') if indices["channel 0"] is not None else None
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
@@ -133,7 +149,8 @@ def process_liv(file_path_str, output_folder=None):
     data_dict = {
         "current": current,
         "temperature": temperature,
-        "voltage": voltage
+        "voltage": voltage,
+        "wavelength": wavelength
     }
 
     print("Data dictionary initialized")

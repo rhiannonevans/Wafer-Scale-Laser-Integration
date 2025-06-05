@@ -6,7 +6,7 @@
 # Generates LIV curves and other WLM data plots (like wl vs temp, wl vs current).
 # Saves original mW power data
 
-def process_other(file_path_str, output_folder=None):
+def process_wlm(file_path_str, output_folder=None):
     import os
     import numpy as np
     import pandas as pd
@@ -17,6 +17,8 @@ def process_other(file_path_str, output_folder=None):
     import re
     import threshold
 
+    if output_folder is None:
+        output_folder = os.path.dirname(os.path.abspath(file_path_str))
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -55,6 +57,11 @@ def process_other(file_path_str, output_folder=None):
         "channel 3": "3",
         "channel 4": "4",
         "channel 5": "5",
+        "channel 6": "6",
+        "channel 7": "7",
+        "channel 8": "8",
+        "channel 9": "9",
+        "channel 10": "10"
     }
 
     # Find indices where these terms occur
@@ -107,12 +114,19 @@ def process_other(file_path_str, output_folder=None):
     ch3 = pd.to_numeric(df.loc[indices["channel 3"]],errors='coerce')  if indices["channel 3"] is not None else None
     ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
     ch5 = pd.to_numeric(df.loc[indices["channel 5"]],errors='coerce')  if indices["channel 5"] is not None else None
+    ch6 = pd.to_numeric(df.loc[indices["channel 6"]],errors='coerce')  if indices["channel 6"] is not None else None
+    ch7 = pd.to_numeric(df.loc[indices["channel 7"]],errors='coerce')  if indices["channel 7"] is not None else None
+    ch8 = pd.to_numeric(df.loc[indices["channel 8"]],errors='coerce')  if indices["channel 8"] is not None else None
+    ch9 = pd.to_numeric(df.loc[indices["channel 9"]],errors='coerce')  if indices["channel 9"] is not None else None
+    ch10 = pd.to_numeric(df.loc[indices["channel 10"]],errors='coerce')  if indices["channel 10"] is not None else None
 
+    print("Extrated channel (power) data")
 
+    
     channels = []
-    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5] if ch is not None]
+    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10] if ch is not None]
     print("Channels found:", len(channels))
-    #print(channels)
+    print(channels)
 
         # Build a dictionary with the core data for saving to a .mat file
     data_dict = {
@@ -148,14 +162,15 @@ def process_other(file_path_str, output_folder=None):
         if current[0] >= 0.2:
             print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
             threshold_Is.append(0)
-            continue
         else:
             tidx = threshold.detect_trend_gradient(ch, current)[0] if threshold.detect_trend_gradient(ch, current) else None
+            print(f"Threshold index for channel {i}: {tidx} with current {current[tidx] if tidx is not None else 'N/A'}")
             if tidx is None:
                 print(f"No threshold index found for channel {i}. Setting to 0.")
-                continue
-            threshold_Is.append(current[tidx])
-            print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
+                threshold_Is.append(0)
+            else:
+                threshold_Is.append(current[tidx])
+                print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
     
     
     print("Threshold currents:", threshold_Is)

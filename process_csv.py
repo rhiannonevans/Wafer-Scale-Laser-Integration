@@ -1,6 +1,6 @@
 import osa
-import liv  # Uncomment if you want to use LIV processing
-import wlm
+import liv  
+import wlm3 as wlm  
 import os
 from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename
@@ -49,34 +49,34 @@ def process_file(file_path, process_mode, base_folder=None):
 
     if process_mode == "osa" and osa_condition:
         print(f"Processing {file_path} as OSA")
-        osa.sweep_osa(file_path, output_folder=output_folder)
+        osa.sweep_osa(file_path, output_folder)
     else:
         print(f"Skipping {file_path}: does not meet OSA criteria. Skipping...")
 
     if process_mode == "liv_wlm":
         if liv_condition:
             print(f"Processing {file_path} as LIV")
-            liv.process_liv(file_path, output_folder=output_folder)
+            liv.process_liv(file_path, output_folder)
         elif wlm_condition:
             print(f"Processing {file_path} as WLM")
-            wlm.process_other(file_path, output_folder=output_folder)
+            wlm.process_wlm(file_path,output_folder)
         else:
             print(f"Skipping {file_path}: qualifies as OSA, not WLM. Skipping...")
 
-    elif process_mode == "all":
+    if process_mode == "all":
         if osa_condition:
             print(f"Processing {file_path} as OSA (all mode)")
-            osa.sweep_osa(file_path, output_folder=output_folder)
+            osa.sweep_osa(file_path, output_folder)
         elif wlm_condition:
             print(f"Processing {file_path} as WLM (all mode)")
-            wlm.process_other(file_path, output_folder=output_folder)
+            wlm.process_wlm(file_path, output_folder)
         elif liv_condition:
-            liv.process_liv(file_path, output_folder=output_folder)  # Uncomment to use LIV instead of WLM
             print(f"Processing {file_path} as LIV (all mode)")
+            liv.process_liv(file_path)  # Uncomment to use LIV instead of WLM
         else:
             print(f"Skipping {file_path}: name must contain 'osa', 'liv', or 'wlm'. Skipping...")
-    else:
-        raise ValueError("Invalid processing mode specified.")
+
+
 
     print(f"Output for {file_path} saved in {output_folder}")
 
@@ -136,12 +136,7 @@ def main():
                 return
             print(f"Selected file: {file_path}")
             try:
-                file_name = os.path.basename(file_path)
-                if "osa" in file_name.lower():
-                    process_mode = "osa"
-                else:
-                    process_mode = "liv_wlm"
-                process_file(file_path, process_mode, base_folder=None)
+                process_file(file_path, process_mode='all', base_folder=None)
             except Exception as e:
                 print(f"Failed processing file: {file_path}\nReason: {str(e)}")
 
