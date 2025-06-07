@@ -256,6 +256,8 @@ def process_wlm(file_path_str, output_folder=None):
     dI = np.gradient(fcurrent)
     dV = np.gradient(voltage)
     dRdI = dV / dI
+    dRdI = dRdI*1000  # Convert to Ohms (current in mA, voltage in V)
+
 
     fig3, ax3 = plt.subplots()
     ax3.plot(fcurrent, dRdI, color='blue', marker='o', label="dV/dI (Differential Resistance)")
