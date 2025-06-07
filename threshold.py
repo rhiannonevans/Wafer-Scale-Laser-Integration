@@ -36,9 +36,11 @@ def detect_trend_gradient(data, current):
     #     ema.append(alpha * d + (1 - alpha) * ema[-1])
     # smoothed = np.array(ema)
 
-    from scipy.signal import butter, filtfilt
-    b, a = butter(N=2, Wn=0.1)  # N=order, Wn=normalized cutoff frequency
-    smoothed = filtfilt(b, a, data)
+    # from scipy.signal import butter, filtfilt
+    # b, a = butter(N=2, Wn=0.1)  # N=order, Wn=normalized cutoff frequency
+    # smoothed = filtfilt(b, a, data)
+
+    smoothed = smooth_data(data)
     
     # Compute the gradient (dy/dx)
     dy = np.gradient(smoothed)
@@ -70,7 +72,7 @@ def detect_trend_gradient(data, current):
     #     #recursively call the function with a lower slope threshold
     #     detect_trend_gradient(data, current, new_slope)
 
-    return pois, smoothed
+    return pois
 
 
 def detect_trend_elbow(data, current):
@@ -188,20 +190,28 @@ def find_threshold(data, current):
 
     return guess
 
+def smooth_data(data):
+    alpha = 0.2  # Smoothing factor between 0 and 1
+    ema = [data[0]]
+    for d in data[1:]:
+        ema.append(alpha * d + (1 - alpha) * ema[-1])
+    smooth = np.array(ema)
+    return smooth
+
 
 def main():
     print("Starting trend detection...")
     import scipy.io
 
-    #path0 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_03_16_16_15_12_loopTEST_1310nm_ChipA1_R0/2025_03_16_16_15_12_loopTEST_1310nm_ChipA1_R0.mat"
-    #path1 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_03_16_16_56_11_hangzouTEST_1310nm_ChipA1_R1/2025_03_16_16_56_11_hangzouTEST_1310nm_ChipA1_R1.mat"
-    path2 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22.mat"
-    path3 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
+    path0 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_03_16_16_15_12_loopTEST_liv_1310nm_ChipA1_R0/2025_03_16_16_15_12_loopTEST_liv_1310nm_ChipA1_R0.mat"
+    path1 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_03_16_16_56_11_hangzouTEST_liv_1310nm_ChipA1_R1/2025_03_16_16_56_11_hangzouTEST_liv_1310nm_ChipA1_R1.mat"
+    #path2 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22.mat"
+    #path3 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
     #path4 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25.mat"
-    path5 = "C:/Users/OWNER/Desktop/LIV_0604_2/LIV/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16.mat"
-    path6 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
-    path7 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25.mat"
-    paths = [path3,path2, path5, path6]
+    #path5 = "C:/Users/OWNER/Desktop/LIV_0604_2/LIV/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16.mat"
+    #path6 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
+    #path7 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25.mat"
+    paths = [path0, path1]
     for path in paths:
         print(f"Processing file: {path}")
         mat_data = scipy.io.loadmat(path)
@@ -230,8 +240,8 @@ def main():
                 continue
             print(f"Channel {i} Data:")
 
-        
-            gradpts, smoothed = detect_trend_gradient(channel, current)
+            smoothed = smooth_data(channel)
+            gradpts = detect_trend_gradient(channel, current)
 
             fig, ax = plt.subplots()
             ax.scatter(current, smoothed, color='magenta', label=f'Smooth Data (ch{i})', alpha=0.5)

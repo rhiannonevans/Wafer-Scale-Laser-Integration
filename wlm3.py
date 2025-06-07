@@ -167,7 +167,8 @@ def process_wlm(file_path_str, output_folder=None):
                 print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
                 threshold_Is.append(0)
             else:
-                tidx = threshold.detect_trend_gradient(ch, current)[0] if threshold.detect_trend_gradient(ch, current) else None
+                points = threshold.detect_trend_gradient(ch, current) if threshold.detect_trend_gradient(ch, current) else None
+                tidx = points[0] if points is not None else None                
                 if tidx is None:
                     print(f"No threshold index found for channel {i}. Setting to 0.")
                     threshold_Is.append(0)
