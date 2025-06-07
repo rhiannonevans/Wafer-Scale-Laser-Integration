@@ -264,7 +264,7 @@ def process_wlm(file_path_str, output_folder=None):
     ax3.set_ylabel("dV/dI (Ohms)")
     ax3.grid(True)
     #add vertical line at threshold current
-    ax3.axvline(x=threshold_Is[1], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+    #ax3.axvline(x=threshold_Is[1], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
 
     ax3.legend()
 
