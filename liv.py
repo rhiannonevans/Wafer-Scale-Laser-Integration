@@ -5,6 +5,7 @@
 # Generates LIV curves.
 # Saves original mW power data and log power data.
 
+
 def process_liv(file_path_str, output_folder=None):
     import os
     import numpy as np
@@ -232,7 +233,35 @@ def process_liv(file_path_str, output_folder=None):
     png_filename2 = base_name + f"_IVcurve.png"
     save_path_png2 = os.path.join(save_dir, png_filename2)
     fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
-    print(f"Saved IV curve png to {save_path_png2}")     
+    print(f"Saved IV curve png to {save_path_png2}") 
+
+    # PLOT differential resistance (dV/dI vs I)    
+    # Calculate differential resistance (dV/dI) vs I
+    dI = np.gradient(fcurrent)
+    dV = np.gradient(voltage)
+    dRdI = dV / dI
+
+    fig3, ax3 = plt.subplots()
+    ax3.plot(fcurrent, dRdI, color='blue', marker='o', label="dV/dI (Differential Resistance)")
+    ax3.set_title("Differential Resistance (dV/dI) vs Current")
+    ax3.set_xlabel("Current (mA)")
+    ax3.set_ylabel("dV/dI (Ohms)")
+    ax3.grid(True)
+    #add vertical line at threshold current
+    ax3.axvline(x=threshold_Is[1], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+
+    ax3.legend()
+
+    # Save the differential resistance plot
+    svg_filename3 = base_name + "_dVdIcurve.svg"
+    save_path_svg3 = os.path.join(save_dir, svg_filename3)
+    fig3.savefig(save_path_svg3, format="svg", bbox_inches="tight")
+    print(f"Saved dV/dI curve svg to {save_path_svg3}")
+
+    png_filename3 = base_name + "_dVdIcurve.png"
+    save_path_png3 = os.path.join(save_dir, png_filename3)
+    fig3.savefig(save_path_png3, format="png", bbox_inches="tight")
+    print(f"Saved dV/dI curve png to {save_path_png3}")
 
 
     #plotting LI curves
@@ -294,3 +323,31 @@ def process_liv(file_path_str, output_folder=None):
             save_path_png = os.path.join(save_dir, png_filename)
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
+
+
+def main():
+    import sys
+    from tkinter import Tk, simpledialog
+    from tkinter.filedialog import askopenfilename
+    from tkinter.filedialog import askdirectory
+
+    # Hide the root window
+    root = Tk()
+    root.withdraw()
+
+    # Ask for the file path
+    file_path = askopenfilename(title="Select a LIV CSV File", filetypes=[("CSV files", "*.csv")])
+    if not file_path:
+        print("No file selected. Exiting.")
+        sys.exit(0)
+
+    # Ask for the output folder
+    output_folder = askdirectory(title="Select Output Folder (Cancel for same location)")
+    if not output_folder:
+        output_folder = None
+
+    # Process the LIV file
+    process_liv(file_path, output_folder)
+
+if __name__ == "__main__":
+    main()
