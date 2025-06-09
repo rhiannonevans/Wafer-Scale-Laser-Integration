@@ -5,9 +5,7 @@
 # Generates LIV curves.
 # Saves original mW power data and log power data.
 
-
-
-def process_liv(file_path_str, output_folder=None):
+def process_wlm(file_path_str, output_folder=None):
     import os
     import numpy as np
     import pandas as pd
@@ -48,6 +46,7 @@ def process_liv(file_path_str, output_folder=None):
         "current": "Current",
         "voltage": "Voltage",
         "temperature": "Temperature",
+        "wavelength": "Wavelength",
         "channel 0": "0",
         "channel 1": "1",
         "channel 2": "2",
@@ -77,25 +76,40 @@ def process_liv(file_path_str, output_folder=None):
     # Extract data rows from the DataFrame
     current = df.loc[indices["current"]] if indices["current"] is not None else None
     if indices["current"] is not None:
-     current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
-     print(current)
+        current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
+        print(current)
     else:
-     current = None
-     print("No current data found for LIV, aborting file...")
-     return
+        current = None
+        print("No current data found, aborting file...")
+        return
 
     print("Current data extracted")
     # Extract voltage and temperature data - make None if not found to handle errors
+    # Extract voltage data
     voltage = df.loc[indices["voltage"]] if indices["voltage"] is not None else None
-    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
-    if voltage is not None and temperature is not None:
+    if voltage is not None:
         voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
-        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
+        print("Voltage data extracted")
     else:
-        print("No Voltage, and/or Temperature data found. Invalid File.")
+        print("No Voltage data found. Invalid File.")
         return
-    print("Voltage and Temperature data extracted")
 
+    # Extract temperature data
+    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
+    if temperature is not None:
+        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
+        print("Temperature data extracted")
+    else:
+        print("No Temperature data found. Invalid File.")
+        return
+
+    wavelength = df.loc[indices["wavelength"]] if indices["wavelength"] is not None else None
+    if wavelength is not None:
+        wavelength = pd.to_numeric(df.loc[indices["wavelength"]], errors='coerce')
+        print("Wavelength data extracted")
+    else:
+        print("No Wavelength data found. Invalid File.")
+        return
 
     ch0 = pd.to_numeric(df.loc[indices["channel 0"]],errors='coerce') if indices["channel 0"] is not None else None
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
@@ -111,15 +125,16 @@ def process_liv(file_path_str, output_folder=None):
 
     print("Extrated channel (power) data")
 
-    if ch0 is not None:
-        ch1_idx = 1
-    else:
-        ch1_idx = 0
-
+    
     channels = []
     channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10] if ch is not None]
     print("Channels found:", len(channels))
     print(channels)
+
+    if ch0 is not None:
+        ch1_idx = 1
+    else:
+        ch1_idx = 0
 
     # Determine the "data" channel based on the largest average value
     data_channel_index = None
@@ -140,7 +155,8 @@ def process_liv(file_path_str, output_folder=None):
     data_dict = {
         "current": current,
         "temperature": temperature,
-        "voltage": voltage
+        "voltage": voltage,
+        "wavelength": wavelength
     }
 
     print("Data dictionary initialized")
@@ -158,7 +174,7 @@ def process_liv(file_path_str, output_folder=None):
                 threshold_Is.append(0)
             else:
                 points = threshold.detect_trend_gradient(ch, current) if threshold.detect_trend_gradient(ch, current) else None
-                tidx = points[0] if points is not None else None
+                tidx = points[0] if points is not None else None                
                 if tidx is None:
                     print(f"No threshold index found for channel {i}. Setting to 0.")
                     threshold_Is.append(0)
@@ -168,7 +184,7 @@ def process_liv(file_path_str, output_folder=None):
 
     
 
-    #print("Threshold currents:", threshold_Is)
+    print("Threshold currents:", threshold_Is)
     data_dict["threhold_currents"] = threshold_Is
     data_dict["threshold_ch1"] = threshold_Is[ch1_idx]
 
@@ -201,6 +217,7 @@ def process_liv(file_path_str, output_folder=None):
     print(f"Data dictionary saved to {save_path_mat}")
     print(data_dict)
 
+
     fcurrent = current
     # Dummy noise-check function (replace with your actual noise check if available)
     noise_threshold = 10 ** -30
@@ -219,7 +236,6 @@ def process_liv(file_path_str, output_folder=None):
                 valid_channels.append((i, ch))
         else:
             print(f"No match found for Channel {i}.")
-
 
     print("plotting IV curve")
 
@@ -242,7 +258,7 @@ def process_liv(file_path_str, output_folder=None):
     png_filename2 = base_name + f"_IVcurve.png"
     save_path_png2 = os.path.join(save_dir, png_filename2)
     fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
-    print(f"Saved IV curve png to {save_path_png2}") 
+    print(f"Saved IV curve png to {save_path_png2}")     
 
     # PLOT differential resistance (dV/dI vs I)    
 
@@ -289,7 +305,6 @@ def process_liv(file_path_str, output_folder=None):
     ax3.grid(True)
     ax3.legend()
 
-
     # Save the differential resistance plot
     svg_filename3 = base_name + "_dVdIcurve.svg"
     save_path_svg3 = os.path.join(save_dir, svg_filename3)
@@ -301,8 +316,7 @@ def process_liv(file_path_str, output_folder=None):
     fig3.savefig(save_path_png3, format="png", bbox_inches="tight")
     print(f"Saved dV/dI curve png to {save_path_png3}")
 
-
-    #plotting LI curves
+    # PLOT LI curves
     print("plotting LI curve")
     num_valid = len(valid_channels)
     if num_valid == 0:
@@ -362,12 +376,12 @@ def process_liv(file_path_str, output_folder=None):
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
 
-
 def main():
     import sys
     from tkinter import Tk, simpledialog
     from tkinter.filedialog import askopenfilename
     from tkinter.filedialog import askdirectory
+
     # Hide the root window
     root = Tk()
     root.withdraw()
@@ -384,7 +398,7 @@ def main():
         output_folder = None
 
     # Process the LIV file
-    process_liv(file_path, output_folder)
+    process_wlm(file_path, output_folder)
 
 if __name__ == "__main__":
     main()

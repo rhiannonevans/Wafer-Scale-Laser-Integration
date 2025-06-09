@@ -101,14 +101,35 @@ def main():
             try:
                 dataD = extract.iterate_files(parent_path, selection_choice, files_to_run)
                 print(dataD)
-                print(dataD['osa'])
                 if process_mode == 'osa':
+                    # Aggregate data across all files before plotting
+                    peak_power_I = []
+                    peak_power = []
+                    peak_power_wl = []
+                    for file_data in dataD["osa"].values():
+                        if isinstance(file_data, dict):
+                            peak_power_I.extend(file_data.get("peak_power_I", []))
+                            peak_power.extend(file_data.get("peak_power", []))
+                            peak_power_wl.extend(file_data.get("peak_power_wl", []))
                     print("Plotting current power comparison...")
-                    multi_osa.plot_scatter2(dataD["osa"]["peak_power_I"], dataD["osa"]["peak_power"], "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    multi_osa.plot_scatter2(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting wl power comparison...")
-                    multi_osa.plot_scatter2(dataD['osa']["peak_power_wl"], dataD["osa"]["peak_power"], "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
-                else:
-                    print("Plotting only for OSA currently")                
+                    multi_osa.plot_scatter2(peak_power_wl, peak_power, "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
+                elif process_mode == 'liv':
+                    # Aggregate data across all files before plotting
+                    peak_power_I = dataD["liv"].get("peak_power_I", [])
+                    peak_power = dataD["liv"].get("peak_power", [])
+                    ch1_threshI = dataD["liv"].get("threshold_ch1", [])
+                    IDs = dataD["liv"].get("IDTag", [])
+                    # for file_data in dataD["liv"].values():
+                    #     if isinstance(file_data, dict):
+                    #         peak_power_I.extend(file_data.get("peak_power_I", []))
+                    #         peak_power.extend(file_data.get("peak_power", []))
+                    #         ch1_threshI.extend(file_data.get("threshold_ch1", []))
+                    print("Plotting peak power v current comparison...")
+                    multi_LIV.plot_scatter2(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    print("Plotting threshold current (channel 1) by peak power comparison...")
+                    multi_LIV.plot_scatter2(IDs, ch1_threshI,"Measurement ID", "Threshold Current (mA)","Peak Power by Current Comparison", "threshI_comparison", parent_path)               
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
     finally:

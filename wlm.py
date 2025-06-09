@@ -4,9 +4,9 @@
 # Expects a CSV with Current, Wavelength, Voltage, Temperature, and Channel (optional channels 0 through 4) data.
 # For comparison plots: Extracts threshold current, peak power, and associated current, wavelength, and voltage.
 # Generates LIV curves and other WLM data plots (like wl vs temp, wl vs current).
-# Saves original mW power data and log power data.
+# Saves original mW power data
 
-def process_other(file_path_str, output_folder=None):
+def process_wlm(file_path_str, output_folder=None):
     import os
     import numpy as np
     import pandas as pd
@@ -15,7 +15,10 @@ def process_other(file_path_str, output_folder=None):
     import scipy.io
     import liv
     import re
+    import threshold
 
+    if output_folder is None:
+        output_folder = os.path.dirname(os.path.abspath(file_path_str))
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -53,6 +56,12 @@ def process_other(file_path_str, output_folder=None):
         "channel 2": "2",
         "channel 3": "3",
         "channel 4": "4",
+        "channel 5": "5",
+        "channel 6": "6",
+        "channel 7": "7",
+        "channel 8": "8",
+        "channel 9": "9",
+        "channel 10": "10"
     }
 
     # Find indices where these terms occur
@@ -104,21 +113,20 @@ def process_other(file_path_str, output_folder=None):
     ch2 = pd.to_numeric(df.loc[indices["channel 2"]],errors='coerce')  if indices["channel 2"] is not None else None
     ch3 = pd.to_numeric(df.loc[indices["channel 3"]],errors='coerce')  if indices["channel 3"] is not None else None
     ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
+    ch5 = pd.to_numeric(df.loc[indices["channel 5"]],errors='coerce')  if indices["channel 5"] is not None else None
+    ch6 = pd.to_numeric(df.loc[indices["channel 6"]],errors='coerce')  if indices["channel 6"] is not None else None
+    ch7 = pd.to_numeric(df.loc[indices["channel 7"]],errors='coerce')  if indices["channel 7"] is not None else None
+    ch8 = pd.to_numeric(df.loc[indices["channel 8"]],errors='coerce')  if indices["channel 8"] is not None else None
+    ch9 = pd.to_numeric(df.loc[indices["channel 9"]],errors='coerce')  if indices["channel 9"] is not None else None
+    ch10 = pd.to_numeric(df.loc[indices["channel 10"]],errors='coerce')  if indices["channel 10"] is not None else None
 
-    # Optionally, convert power data if provided in mW (0: already in dBm, 1: in mW)
-    is_mW = 0
-    convert_const = 10 * np.log(10)
-    if is_mW:
-        if ch0 is not None: ch0 = ch0.mul(convert_const)
-        if ch1 is not None: ch1 = ch1.mul(convert_const)
-        if ch2 is not None: ch2 = ch2.mul(convert_const)
-        if ch3 is not None: ch3 = ch3.mul(convert_const)
-        if ch4 is not None: ch4 = ch4.mul(convert_const)
+    print("Extrated channel (power) data")
 
+    
     channels = []
-    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4] if ch is not None]
+    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10] if ch is not None]
     print("Channels found:", len(channels))
-    #print(channels)
+    print(channels)
 
         # Build a dictionary with the core data for saving to a .mat file
     data_dict = {
@@ -148,16 +156,21 @@ def process_other(file_path_str, output_folder=None):
     threshold_Is = []
     for i, ch in enumerate(channels):
         data_dict[f"channel_{i}"] = ch
-        logged_ch = np.log(ch)
         print(f"Saved channel {i}:")
-        data_dict[f"log_channel_{i}"] = logged_ch
 
-        tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
-        threshold_Is.append(current[tidx])
-        print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
-        # if i == data_channel_index:
-        #     tidx = next(idx for idx, value in enumerate(logged_ch) if value > -40)+1
-        #     print(f"Channel {i} used for threshold index:", tidx)
+        # Assumes there is no threshold if data starts above 0.2A - implies threshold has been passed
+        if current[0] >= 0.2:
+            print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
+            threshold_Is.append(0)
+        else:
+            tidx = threshold.detect_trend_gradient(ch, current)[0] if threshold.detect_trend_gradient(ch, current) else None
+            print(f"Threshold index for channel {i}: {tidx} with current {current[tidx] if tidx is not None else 'N/A'}")
+            if tidx is None:
+                print(f"No threshold index found for channel {i}. Setting to 0.")
+                threshold_Is.append(0)
+            else:
+                threshold_Is.append(current[tidx])
+                print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
     
     
     print("Threshold currents:", threshold_Is)
@@ -244,12 +257,7 @@ def process_other(file_path_str, output_folder=None):
             #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
-            fig1, ax1 = plt.subplots()
-            ax1.plot(fcurrent, logged_ch, color='black', marker='o', label=f"Channel {i}")
-            ax1.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            #ax1.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            #ax1.axhline(y=np.log(peak_power), color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
-
+            
             #ax.set_xticks(i_ticks)
             #ax.set_xticklabels(i_ticks)
             #ax.set_yticks(ch_ticks)
@@ -258,12 +266,6 @@ def process_other(file_path_str, output_folder=None):
             ax.set_xlabel("Current (mA)")
             ax.set_ylabel("Power (mW)")
             ax.grid(True)
-
-            ax1.set_title(f"Current vs Log Power - Channel {i}")
-            ax1.set_xlabel("Current (mA)")
-            ax1.set_ylabel("Log Power (LOG(mW))")
-            ax1.grid(True)
-
 
             # Save the channel plot as an SVG file in the output folder
             svg_filename = base_name + f"_LI_channel{i}.svg"
@@ -276,18 +278,7 @@ def process_other(file_path_str, output_folder=None):
             save_path_png = os.path.join(save_dir, png_filename)
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
-
-            #save the log channel plot as an SVG file in the output folder
-            svg_filename1 = base_name + f"_LI_channel{i}_log.svg"
-            save_path_svg1 = os.path.join(save_dir, svg_filename1)
-            fig1.savefig(save_path_svg1, format="svg", bbox_inches="tight")
-            print(f"Saved channel {i} log plot to {save_path_svg1}")
-            # Optionally, close the figure: plt.close(fig)
-            # Save the channel plot as an PNG file in the output folder
-            png_filename1 = base_name + f"_LI_channel{i}_log.png"
-            save_path_png1 = os.path.join(save_dir, png_filename1)
-            fig1.savefig(save_path_png1, format="png", bbox_inches="tight")
-            print(f"Saved channel {i} log plot to {save_path_png1}")
+            plt.close(fig)  # Close the figure to free memory
 
     # Create and save the current vs voltage (IV) plot
     if current is not None and voltage is not None:

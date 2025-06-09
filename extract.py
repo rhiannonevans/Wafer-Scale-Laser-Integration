@@ -203,6 +203,7 @@ def setup_compdictionaries():
         "wlm": {
             "IDtag": [],
             "threshold_currents": [],
+            "threshold_ch1": [],
             "peak_power": [],
             "peak_power_I": [],
             "peak_power_WL": [],
@@ -211,6 +212,7 @@ def setup_compdictionaries():
         "liv": {
             "IDtag": [],
             "threshold_currents": [],
+            "threshold_ch1": [],
             "peak_power": [],
             "peak_power_I": [],
         }
@@ -245,6 +247,9 @@ def update_wlm_dict(comp_dict, data, file_path):
     if 'threshold_currents' in data:
         arr = data['threshold_currents'].flatten()
         comp_dict["wlm"]["threshold_currents"].append(float(np.max(arr)) if arr.size > 0 else None)
+    if 'threshold_ch1' in data:
+        arr = data['threshold_ch1'].flatten()
+        comp_dict["liv"]["threshold_ch1"].append(float(np.max(arr)) if arr.size > 0 else None)
     if 'peak_power' in data:
         arr = data['peak_power'].flatten()
         comp_dict["wlm"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)
@@ -264,6 +269,9 @@ def update_liv_dict(comp_dict, data, file_path):
     if 'threshold_currents' in data:
         arr = data['threshold_currents'].flatten()
         comp_dict["liv"]["threshold_currents"].append(float(np.max(arr)) if arr.size > 0 else None)
+    if 'threshold_ch1' in data:
+        arr = data['threshold_ch1'].flatten()
+        comp_dict["liv"]["threshold_ch1"].append(float(np.max(arr)) if arr.size > 0 else None)
     if 'peak_power' in data:
         arr = data['peak_power'].flatten()
         comp_dict["liv"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)

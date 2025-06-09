@@ -43,8 +43,25 @@ def gather_mat_data(folder_paths):
                     data.append((mat_data, file, root_dir))
     return data
 
+def plot_scatter2(data1, data2, x_label, y_label, title, save_title, parent_path = None):
+        plt.figure()
+        plt.scatter(data1, data2, c=data2, cmap=cm.get_cmap('inferno'), alpha=0.7)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.grid(True)
 
-def plot_data(data):
+        if parent_path:
+            png_path = os.path.join(parent_path, f"{save_title}.png")
+            svg_path = os.path.join(parent_path, f"{save_title}.svg")
+            plt.savefig(png_path, bbox_inches='tight')
+            plt.savefig(svg_path, bbox_inches='tight')
+        else:
+            print("Error: parent_path is None. Cannot save the plot.")
+        plt.show()
+
+
+def plot_data(data, save_folder = "C:/Users/OWNER/Desktop/"):
     colormap = cm.get_cmap('inferno')
 
     def plot_line(data, x_key, y_key, x_label, y_label, title, save_title):
@@ -99,7 +116,7 @@ def plot_data(data):
 
         # Save the plot in the specified folder
         if data:
-            save_folder = r"C:\Users\jsheri1\Documents\A_Research\2024-02_Wafer-Scale\20250403_Shuksan_ANT_Light2025_WaferscaleMeasurements\Plots"
+            #save_folder = r"C:\Users\jsheri1\Documents\A_Research\2024-02_Wafer-Scale\20250403_Shuksan_ANT_Light2025_WaferscaleMeasurements\Plots"
             os.makedirs(save_folder, exist_ok=True)
             save_path = os.path.join(save_folder, f"{save_title}.png")
             plt.savefig(save_path, bbox_inches='tight')
@@ -131,6 +148,6 @@ if __name__ == "__main__":
 
     if folders:
         data = gather_mat_data(folders)
-        plot_data(data)
+        plot_data(data,parent_folder)
     else:
         print("No valid folders selected.")
