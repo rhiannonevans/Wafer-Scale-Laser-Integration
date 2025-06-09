@@ -43,6 +43,23 @@ def gather_mat_data(folder_paths):
                     data.append((mat_data, file, root_dir))
     return data
 
+def plot_scatter2(data1, data2, x_label, y_label, title, save_title, parent_path = None):
+        plt.figure()
+        plt.scatter(data1, data2, c=data2, cmap=cm.get_cmap('inferno'), alpha=0.7)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.grid(True)
+
+        if parent_path:
+            png_path = os.path.join(parent_path, f"{save_title}.png")
+            svg_path = os.path.join(parent_path, f"{save_title}.svg")
+            plt.savefig(png_path, bbox_inches='tight')
+            plt.savefig(svg_path, bbox_inches='tight')
+        else:
+            print("Error: parent_path is None. Cannot save the plot.")
+        plt.show()
+
 
 def plot_data(data, save_folder = "C:/Users/OWNER/Desktop/"):
     colormap = cm.get_cmap('inferno')

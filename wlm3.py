@@ -131,6 +131,11 @@ def process_wlm(file_path_str, output_folder=None):
     print("Channels found:", len(channels))
     print(channels)
 
+    if ch0 is not None:
+        ch1_idx = 1
+    else:
+        ch1_idx = 0
+
     # Determine the "data" channel based on the largest average value
     data_channel_index = None
     max_average = -np.inf
@@ -181,6 +186,7 @@ def process_wlm(file_path_str, output_folder=None):
 
     print("Threshold currents:", threshold_Is)
     data_dict["threhold_currents"] = threshold_Is
+    data_dict["threshold_ch1"] = threshold_Is[ch1_idx]
 
     # Formulate comparison data (Max power of data channel and assoc current)
     if data_channel_index is not None:
@@ -209,6 +215,8 @@ def process_wlm(file_path_str, output_folder=None):
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")
+    print(data_dict)
+
 
     fcurrent = current
     # Dummy noise-check function (replace with your actual noise check if available)

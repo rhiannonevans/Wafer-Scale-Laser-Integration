@@ -111,7 +111,11 @@ def process_liv(file_path_str, output_folder=None):
 
     print("Extrated channel (power) data")
 
-    
+    if ch0 is not None:
+        ch1_idx = 1
+    else:
+        ch1_idx = 0
+
     channels = []
     channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10] if ch is not None]
     print("Channels found:", len(channels))
@@ -164,8 +168,9 @@ def process_liv(file_path_str, output_folder=None):
 
     
 
-    print("Threshold currents:", threshold_Is)
+    #print("Threshold currents:", threshold_Is)
     data_dict["threhold_currents"] = threshold_Is
+    data_dict["threshold_ch1"] = threshold_Is[ch1_idx]
 
     # Formulate comparison data (Max power of data channel and assoc current)
     if data_channel_index is not None:
@@ -194,6 +199,7 @@ def process_liv(file_path_str, output_folder=None):
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")
+    print(data_dict)
 
     fcurrent = current
     # Dummy noise-check function (replace with your actual noise check if available)
@@ -213,6 +219,7 @@ def process_liv(file_path_str, output_folder=None):
                 valid_channels.append((i, ch))
         else:
             print(f"No match found for Channel {i}.")
+
 
     print("plotting IV curve")
 
