@@ -6,6 +6,7 @@
 # Saves original mW power data and log power data.
 
 
+
 def process_liv(file_path_str, output_folder=None):
     import os
     import numpy as np
@@ -14,6 +15,7 @@ def process_liv(file_path_str, output_folder=None):
     import matplotlib as mpl
     import scipy.io
     import threshold
+    from scipy.optimize import curve_fit
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -236,22 +238,50 @@ def process_liv(file_path_str, output_folder=None):
     print(f"Saved IV curve png to {save_path_png2}") 
 
     # PLOT differential resistance (dV/dI vs I)    
+
     # Calculate differential resistance (dV/dI) vs I
     dI = np.gradient(fcurrent)
     dV = np.gradient(voltage)
     dRdI = dV / dI
-    dRdI = dRdI*1000  # Convert to Ohms (current in mA, voltage in V)
+    dRdI = dRdI * 1000  # Convert to Ohms
 
+    # Define exponential with offset model
+    def exp_offset(x, A, B, C):
+        return A * np.exp(-B * (x - 0)) + C
+
+    # Initial guesses
+    C0 = np.median(dRdI[-10:])                     # plateau at high I
+    A0 = np.max(dRdI) - C0                         # amplitude of decay
+    B0 = 1.0 / (max(fcurrent) - min(fcurrent))     # decay rate estimate
+    p0 = [A0, B0, C0]
+
+    # Fit the model
+    popt, _ = curve_fit(
+        exp_offset,
+        fcurrent,
+        dRdI,
+        p0=p0,
+        bounds=([0, 0, 0], [np.inf, np.inf, np.inf])
+    )
+
+    # Generate fitted curve
+    fcurrent_fit = np.linspace(min(fcurrent), max(fcurrent), 500)
+    dRdI_fit = exp_offset(fcurrent_fit, *popt)
+
+    # Plot
     fig3, ax3 = plt.subplots()
-    ax3.plot(fcurrent, dRdI, color='blue', marker='o', label="dV/dI (Differential Resistance)")
+    ax3.scatter(fcurrent, dRdI, color='blue', marker='o', label="dV/dI (Differential Resistance)")
+    ax3.plot(fcurrent_fit, dRdI_fit, color='red', linewidth=2,
+            label=(f"Fit: A·exp(-B·x) + C\n"
+                    f"A={popt[0]:.2f}, B={popt[1]:.4f}, C={popt[2]:.2f}"))
+
+    # Labels and title
     ax3.set_title("Differential Resistance (dV/dI) vs Current")
     ax3.set_xlabel("Current (mA)")
     ax3.set_ylabel("dV/dI (Ohms)")
     ax3.grid(True)
-    #add vertical line at threshold current
-    #ax3.axvline(x=threshold_Is[1], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-
     ax3.legend()
+
 
     # Save the differential resistance plot
     svg_filename3 = base_name + "_dVdIcurve.svg"
@@ -331,7 +361,6 @@ def main():
     from tkinter import Tk, simpledialog
     from tkinter.filedialog import askopenfilename
     from tkinter.filedialog import askdirectory
-
     # Hide the root window
     root = Tk()
     root.withdraw()
