@@ -43,12 +43,12 @@ The following plots and characteristic data (for comparison), and a .mat file co
 
 
 ### For OSA:
-"filename_Ipeaks"
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_Ipeaks.png)
-"filename_spectrum"
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_spectrum.png)
-"filename_WLpeaks"
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_WLPeaks.png)
+"filename_Ipeaks"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_Ipeaks.png)<br>
+"filename_spectrum"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_spectrum.png)<br>
+"filename_WLpeaks"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_WLPeaks.png)<br>
 
 ### For LIV:
 "filename_LI_channel#" *** # replaced with 1, 2, 3..., one is produced for each channel in the csv <br>
@@ -79,3 +79,15 @@ Opt to (1) run all files in a parent folder or (2) run only select files from a 
 Choose to process files of type (1) "OSA" or (2) "LIV". 
 
 The following plots and characteristic data (for comparison), and a .mat file containing the organized data, will be saved to the parent folder.
+
+### FOR OSA COMPARISONS
+"current_wl"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/current_wl.png)<br>
+"osa_current_peakL"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/osa_current_peakL.jpg)<br>
+"singlePT_osa"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/singlePT_osa.png)<br>
+
+### FOR LIV COMPARISONS
+"peak_power_current_comparison"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/peak_power_current_comparison.png)<br>
