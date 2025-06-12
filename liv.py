@@ -1,9 +1,10 @@
 # Processes "LIV-type" files - non-OSA files containing non-useful wl data.
 # Produces .mat files and plots of data.
 # Expects a CSV with Current and Channel (optional channels 0 through 4) data.
-# For comparison plots: Extracts threshold current and  peak power w associated current.
-# Generates LIV curves.
-# Saves original mW power data and log power data.
+# Extracts peak power w associated current.
+# Estimates threshold current for each channel.
+# Generates LIV curves, and a differential resistance curve.
+# Saves original mW power data and computed values of interest to a .mat file.
 
 
 

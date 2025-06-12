@@ -1,9 +1,10 @@
-# Processes "LIV-type" files - non-OSA files containing non-useful wl data.
+# Processes "WLM-type" files - LIV files containing useful WL data.
 # Produces .mat files and plots of data.
 # Expects a CSV with Current and Channel (optional channels 0 through 4) data.
-# For comparison plots: Extracts threshold current and  peak power w associated current.
-# Generates LIV curves.
-# Saves original mW power data and log power data.
+# Extracts peak power w associated current.
+# Estimates threshold current for each channel.
+# Generates LIV curves, and a differential resistance curve.
+# Saves original mW power data and computed values of interest to a .mat file.
 
 def process_wlm(file_path_str, output_folder=None):
     import os
@@ -348,7 +349,7 @@ def process_wlm(file_path_str, output_folder=None):
 
             # LI Curves
             fig, ax = plt.subplots()
-            ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
+            ax.plot(fcurrent, proc_ch, color='black', marker='o')
             ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
             #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
@@ -360,6 +361,7 @@ def process_wlm(file_path_str, output_folder=None):
             ax.set_title(f"Current vs Power - Channel {i}")
             ax.set_xlabel("Current (mA)")
             ax.set_ylabel("Power (mW)")
+            ax.legend()
             ax.grid(True)
             
 
@@ -375,6 +377,56 @@ def process_wlm(file_path_str, output_folder=None):
             save_path_png = os.path.join(save_dir, png_filename)
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
+    
+    #Plot WL vs Temp and WL vs Current
+    print("plotting WL vs Temp and WL vs Current")
+        # WL vs Temp plot
+    if wavelength is not None and temperature is not None:
+        fig, ax = plt.subplots()
+        mask = wavelength > 1000
+        ax.scatter(wavelength[mask], temperature[mask], color='black', marker='o')
+        ax.set_title("Temperature vs Wavelength")
+        ax.set_ylabel("Temperature (C)")
+        ax.set_xlabel("Wavelength (nm)")
+        ax.grid(True)
+
+        # Save the WL vs Temp plot as an SVG file in the output folder
+        wl_temp_filename = base_name + "_Temp_vs_WL.svg"
+        save_path_wl_temp = os.path.join(save_dir, wl_temp_filename)
+        fig.savefig(save_path_wl_temp, format="svg", bbox_inches="tight")
+        print(f"Saved Temperature vs Wavelength plot to {save_path_wl_temp}")
+        
+         # Save the WL vs Temp plot as an SVG file in the output folder
+        wl_temp_filename1 = base_name + "_WL_vs_Temp.png"
+        save_path_wl_temp1 = os.path.join(save_dir, wl_temp_filename1)
+        fig.savefig(save_path_wl_temp1, format="png", bbox_inches="tight")
+        print(f"Saved Temperature vs Wavelength plot to {save_path_wl_temp1}")
+
+    # WL vs current plot
+    if wavelength is not None and current is not None:
+        fig, ax = plt.subplots()
+        mask = wavelength > 1000
+        ax.scatter(current[mask], wavelength[mask], color='black', marker='o')
+        ax.set_title("Wavelength vs Current")
+        ax.set_xlabel("Current (mA)")
+        ax.set_ylabel("Wavelength (nm)")
+        ax.grid(True)
+
+        #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+        #ax.axhline(y=peak_power_WL, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+
+
+        # Save the WL vs current plot as an SVG file in the output folder
+        wl_current_filename = base_name + "_WL_vs_Current.svg"
+        save_path_wl_current = os.path.join(save_dir, wl_current_filename)
+        fig.savefig(save_path_wl_current, format="svg", bbox_inches="tight")
+        print(f"Saved Wavelength vs Current plot to {save_path_wl_current}")
+
+        wl_current_filename1 = base_name + "_WL_vs_Current.png"
+        save_path_wl_current1 = os.path.join(save_dir, wl_current_filename1)
+        fig.savefig(save_path_wl_current1, format="png", bbox_inches="tight")
+        print(f"Saved  Wavelength vs Current plot to {save_path_wl_current1}")
+
 
 def main():
     import sys
