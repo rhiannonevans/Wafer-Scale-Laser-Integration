@@ -8,7 +8,25 @@ import extract
 import multi_osa
 import multi_wlm
 import multi_LIV
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
+def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path = None):
+        plt.figure()
+        plt.scatter(data1, data2, c=data2, cmap=cm.get_cmap('inferno'), alpha=0.7)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.grid(True)
+
+        if parent_path:
+            png_path = os.path.join(parent_path, f"{save_title}.png")
+            svg_path = os.path.join(parent_path, f"{save_title}.svg")
+            plt.savefig(png_path, bbox_inches='tight')
+            plt.savefig(svg_path, bbox_inches='tight')
+        else:
+            print("Error: parent_path is None. Cannot save the plot.")
+        plt.show()
 
 def main():
     # Initialize Tkinter and hide the root window.
@@ -112,9 +130,9 @@ def main():
                             peak_power.extend(file_data.get("peak_power", []))
                             peak_power_wl.extend(file_data.get("peak_power_wl", []))
                     print("Plotting current power comparison...")
-                    multi_osa.plot_scatter2(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting wl power comparison...")
-                    multi_osa.plot_scatter2(peak_power_wl, peak_power, "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
+                    plot_scatter(peak_power_wl, peak_power, "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_wl_comparison", parent_path) 
                 elif process_mode == 'liv':
                     # Aggregate data across all files before plotting
                     peak_power_I = dataD["liv"].get("peak_power_I", [])
@@ -127,9 +145,9 @@ def main():
                     #         peak_power.extend(file_data.get("peak_power", []))
                     #         ch1_threshI.extend(file_data.get("threshold_ch1", []))
                     print("Plotting peak power v current comparison...")
-                    multi_LIV.plot_scatter2(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting threshold current (channel 1) by peak power comparison...")
-                    multi_LIV.plot_scatter2(IDs, ch1_threshI,"Measurement ID", "Threshold Current (mA)","Peak Power by Current Comparison", "threshI_comparison", parent_path)               
+                    plot_scatter(IDs, ch1_threshI,"Measurement ID", "Threshold Current (mA)","Peak Power by Current Comparison", "threshI_comparison", parent_path)               
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
     finally:

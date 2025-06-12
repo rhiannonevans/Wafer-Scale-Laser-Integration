@@ -44,21 +44,19 @@ The following plots and characteristic data (for comparison), and a .mat file co
 
 ### For OSA:
 "filename_Ipeaks"
-EXAMPLE IMAGE
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_Ipeaks.png)
 "filename_spectrum"
-EXAMPLE IMAGE
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_spectrum.png)
 "filename_WLpeaks"
-EXAMPLE IMAGE
-"filename_WLpeaks"
-EXAMPLE IMAGE
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_WLPeaks.png)
 
 ### For LIV:
 "filename_LI_channel#" *** # replaced with 1, 2, 3..., one is produced for each channel in the csv
-EXAMPLE IMAGE
-"filename_LI_channel#_log" *** # replaced with 1, 2, 3..., one is produced for each channel in the csv
-EXAMPLE IMAGE
-"filename_IV"
-EXAMPLE IMAGE
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22_LI_channel1.png)
+"filename_IVcurve"
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6_IVcurve.png)
+"filename_dVdIcurve"
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_05_08_16_09_17_LIV_wlm_1310nm_ChipC31_R1__iter14_dVdIcurve.png)
 
 (The last two are omitted if there is no useful wavelength data in the csv)
 "filename_WL_vs_Current"
