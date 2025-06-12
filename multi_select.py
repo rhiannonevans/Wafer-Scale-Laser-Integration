@@ -1,3 +1,11 @@
+"""
+    Import this script to create a GUI for selecting subfolders from a specified parent folder.
+
+    [Author: Rhiannon H Evans]
+    [Date: 2025-06-12]
+"""
+
+
 import os
 import math
 from tkinter import (

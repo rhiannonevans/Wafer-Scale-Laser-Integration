@@ -5,11 +5,18 @@ from tkinter.filedialog import askdirectory, askopenfilename
 import multi_select
 import process_csv
 import extract
-import multi_osa
-import multi_wlm
-import multi_LIV
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+
+"""
+    Script for processing and comparing CSV files for either OSA or LIV/WLM data. Allows user to select a parent folder,
+    then either sweep through all files in that folder or select specific files to run. 
+    If a file has been processed previously (a .mat exists with the same name), it will skip processing that file. (To re-process that file, either 
+    delete the existing .mat file or run process_csv.py on it.)
+
+    If user chooses to compare files, it will extract relevant data from the processed files and plot either current vs peak power and wavelength vs peak power for OSA data,
+    or current vs peak power and threshold current for LIV/WLM data. The plots will be saved in the parent folder as PNG and SVG files.
+"""
 
 def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path = None):
         plt.figure()

@@ -1,10 +1,12 @@
-# Processes "WLM-type" files - LIV files containing useful WL data.
+## OBSOLETE 
+
+# Processes "WLM-type" files - non-OSA files containing current and channel (power) data, as well as wavelength, temperature, and voltage data.
+#          Checks for the presence of useful wavelength data (mean > 1000 nm). If not present, it switches to LIV processing.
 # Produces .mat files and plots of data.
-# Expects a CSV with Current and Channel (optional channels 0 through 4) data.
-# Extracts peak power w associated current.
-# Estimates threshold current for each channel.
-# Generates LIV curves, and a differential resistance curve.
-# Saves original mW power data and computed values of interest to a .mat file.
+# Expects a CSV with Current, Wavelength, Voltage, Temperature, and Channel (optional channels 0 through 4) data.
+# For comparison plots: Extracts threshold current, peak power, and associated current, wavelength, and voltage.
+# Generates LIV curves and other WLM data plots (like wl vs temp, wl vs current).
+# Saves original mW power data
 
 def process_wlm(file_path_str, output_folder=None):
     import os
@@ -13,8 +15,12 @@ def process_wlm(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
+    import liv
+    import re
     import threshold
-    from scipy.optimize import curve_fit
+
+    if output_folder is None:
+        output_folder = os.path.dirname(os.path.abspath(file_path_str))
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -29,25 +35,24 @@ def process_wlm(file_path_str, output_folder=None):
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist. Please check the file path.")
-    
-
 
     # Load the CSV file
+    #df = pd.read_csv(file_path, header=None, on_bad_lines="skip", engine="python", skiprows=24)
     # f = open(file_path, 'r')
-    # print(f"Reading file: {file_path}")
-    # df = pd.read_csv(f, header=None, on_bad_lines="skip", engine="python", skiprows=23)
+    # df = pd.read_csv(f, header=None, on_bad_lines="skip", engine="python", skiprows=24)
     # f.close()
-    # print(df)
+
     with open(file_path, 'r') as file:
         df = pd.read_csv(file, header=None, on_bad_lines="skip", engine="python", skiprows=24)
         file.close()
 
+    print(df)
     # Define search terms for each target row
     search_terms = {
         "current": "Current",
+        "wavelength": "Wavelength",
         "voltage": "Voltage",
         "temperature": "Temperature",
-        "wavelength": "Wavelength",
         "channel 0": "0",
         "channel 1": "1",
         "channel 2": "2",
@@ -69,48 +74,41 @@ def process_wlm(file_path_str, output_folder=None):
             indices[key] = matches.idxmax()
         else:
             indices[key] = None
-    print("Indices found:", indices)
+
     # Remove the first column (used for matching)
     del df[0]
-    print(df)
 
     # Extract data rows from the DataFrame
     current = df.loc[indices["current"]] if indices["current"] is not None else None
     if indices["current"] is not None:
-        current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
-        print(current)
+     current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
     else:
-        current = None
-        print("No current data found, aborting file...")
-        return
-
-    print("Current data extracted")
-    # Extract voltage and temperature data - make None if not found to handle errors
-    # Extract voltage data
-    voltage = df.loc[indices["voltage"]] if indices["voltage"] is not None else None
-    if voltage is not None:
-        voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
-        print("Voltage data extracted")
-    else:
-        print("No Voltage data found. Invalid File.")
-        return
-
-    # Extract temperature data
-    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
-    if temperature is not None:
-        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
-        print("Temperature data extracted")
-    else:
-        print("No Temperature data found. Invalid File.")
-        return
+     current = None
 
     wavelength = df.loc[indices["wavelength"]] if indices["wavelength"] is not None else None
-    if wavelength is not None:
-        wavelength = pd.to_numeric(df.loc[indices["wavelength"]], errors='coerce')
-        print("Wavelength data extracted")
+    voltage = df.loc[indices["voltage"]] if indices["voltage"] is not None else None
+    temperature = df.loc[indices["temperature"]] if indices["temperature"] is not None else None
+
+    #print("Current:", current)
+    #print("Wavelength:", wavelength)
+    #print("Voltage:", voltage)  
+    #print("Temperature:", temperature)
+
+    if voltage is not None and temperature is not None:
+        voltage = pd.to_numeric(df.loc[indices["voltage"]], errors='coerce')
+        temperature = pd.to_numeric(df.loc[indices["temperature"]], errors='coerce')
     else:
-        print("No Wavelength data found. Invalid File.")
+        print("No Voltage, and/or Temperature data found. Invalid File.")
         return
+    
+    liv = re.search(r"^liv", base_name, re.IGNORECASE)
+
+
+    if wavelength is None or liv:
+        print("No useful Wavelength data found. Processing as LIV.")
+        liv.process_liv(file_path_str, output_folder=output_folder) 
+    else:
+        wavelength = pd.to_numeric(df.loc[indices["wavelength"]], errors='coerce')
 
     ch0 = pd.to_numeric(df.loc[indices["channel 0"]],errors='coerce') if indices["channel 0"] is not None else None
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
@@ -132,10 +130,14 @@ def process_wlm(file_path_str, output_folder=None):
     print("Channels found:", len(channels))
     print(channels)
 
-    if ch0 is not None:
-        ch1_idx = 1
-    else:
-        ch1_idx = 0
+        # Build a dictionary with the core data for saving to a .mat file
+    data_dict = {
+        "temperature": temperature,
+        "voltage": voltage,
+        "current": current,
+        "wavelength": wavelength,
+    }
+    print("Data dictionary initialized")
 
     # Determine the "data" channel based on the largest average value
     data_channel_index = None
@@ -152,56 +154,50 @@ def process_wlm(file_path_str, output_folder=None):
     else:
         print("No valid data channel found.")
 
-    # Build a dictionary with the core data for saving to a .mat file
-    data_dict = {
-        "current": current,
-        "temperature": temperature,
-        "voltage": voltage,
-        "wavelength": wavelength
-    }
-
-    print("Data dictionary initialized")
-
 
     threshold_Is = []
     for i, ch in enumerate(channels):
-        if ch is not None:
-            data_dict[f"channel_{i}"] = ch
-            print(f"Saved channel {i}:")
-            
-            # Assumes there is no threshold if data starts above 0.2A - implies threshold has been passed
-            if current[1] >= 0.2:
-                print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
+        data_dict[f"channel_{i}"] = ch
+        print(f"Saved channel {i}:")
+
+        # Assumes there is no threshold if data starts above 0.2A - implies threshold has been passed
+        if current[0] >= 0.2:
+            print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
+            threshold_Is.append(0)
+        else:
+            tidx = threshold.detect_trend_gradient(ch, current)[0] if threshold.detect_trend_gradient(ch, current) else None
+            print(f"Threshold index for channel {i}: {tidx} with current {current[tidx] if tidx is not None else 'N/A'}")
+            if tidx is None:
+                print(f"No threshold index found for channel {i}. Setting to 0.")
                 threshold_Is.append(0)
             else:
-                points = threshold.detect_trend_gradient(ch, current) if threshold.detect_trend_gradient(ch, current) else None
-                tidx = points[0] if points is not None else None                
-                if tidx is None:
-                    print(f"No threshold index found for channel {i}. Setting to 0.")
-                    threshold_Is.append(0)
-                else:
-                    threshold_Is.append(current[tidx])
-                    print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
-
+                threshold_Is.append(current[tidx])
+                print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
     
-
+    
     print("Threshold currents:", threshold_Is)
-    data_dict["threhold_currents"] = threshold_Is
-    data_dict["threshold_ch1"] = threshold_Is[ch1_idx]
+    data_dict["threshold_currents"] = threshold_Is
 
-    # Formulate comparison data (Max power of data channel and assoc current)
+    # Formulate comparison data (Max power of data channel and assoc current and wl)
+
     if data_channel_index is not None:
         peak_power = channels[data_channel_index].max()
+        data_dict["peak_power"] = peak_power
         peak_power_I = current[channels[data_channel_index].idxmax()]
+        data_dict["peak_power_I"] = peak_power_I
+        peak_power_WL = wavelength[channels[data_channel_index].idxmax()]
+        data_dict["peak_power_WL"] = peak_power_WL
         peak_power_V = voltage[channels[data_channel_index].idxmax()]
         data_dict["peak_power_V"] = peak_power_V
-        data_dict["peak_power"] = peak_power
-        data_dict["peak_power_I"] = peak_power_I
+
         print(f"Peak power: {data_dict['peak_power']}")
         print(f"Assoc Current: {data_dict['peak_power_I']}")
+        print(f"Assoc Wavelength: {data_dict['peak_power_WL']}")
         print(f"Assoc Voltage: {data_dict['peak_power_V']}")
     else:
         print("No valid data channel found for peak power calculation.")
+
+    
 
     # Determine the output directory
     if output_folder is not None:
@@ -216,10 +212,13 @@ def process_wlm(file_path_str, output_folder=None):
     save_path_mat = os.path.join(save_dir, mat_filename)
     scipy.io.savemat(save_path_mat, data_dict)
     print(f"Data dictionary saved to {save_path_mat}")
-    print(data_dict)
 
+    # Determine the current data to use (filter noise by wavelength)
+    if current.max() > 1000:
+        fcurrent = current[wavelength > 1000]
+    else:
+        fcurrent = current
 
-    fcurrent = current
     # Dummy noise-check function (replace with your actual noise check if available)
     noise_threshold = 10 ** -30
     def noisy(val, threshold):
@@ -229,7 +228,6 @@ def process_wlm(file_path_str, output_folder=None):
     valid_channels = []
     for i, ch in enumerate(channels):
         if ch is not None:
-
             print(f"Found power (mW) data for Channel {i}")
             if noisy(ch.mean(), noise_threshold):
                 print(f"Channel {i} classified as noise, skipping.")
@@ -238,87 +236,6 @@ def process_wlm(file_path_str, output_folder=None):
         else:
             print(f"No match found for Channel {i}.")
 
-    print("plotting IV curve")
-
-    # Plot IV Curve
-    fig2, ax2 = plt.subplots()
-    ax2.plot(fcurrent, voltage, color='black', marker='o', label="IV Curve")
-    #ax2.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-    #ax2.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-    ax2.set_title(f"Current vs Voltage")
-    ax2.set_xlabel("Current (mA)")
-    ax2.set_ylabel("Voltage (V)")
-    ax2.grid(True)
-
-    #save svg
-    svg_filename2 = base_name + f"_IVcurve.svg"
-    save_path_svg2 = os.path.join(save_dir, svg_filename2)
-    fig2.savefig(save_path_svg2, format="svg", bbox_inches="tight")
-    print(f"Saved IV curve svg to {save_path_svg2}")
-     #save png
-    png_filename2 = base_name + f"_IVcurve.png"
-    save_path_png2 = os.path.join(save_dir, png_filename2)
-    fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
-    print(f"Saved IV curve png to {save_path_png2}")     
-
-    # PLOT differential resistance (dV/dI vs I)    
-
-    # Calculate differential resistance (dV/dI) vs I
-    dI = np.gradient(fcurrent)
-    dV = np.gradient(voltage)
-    dRdI = dV / dI
-    dRdI = dRdI * 1000  # Convert to Ohms
-
-    # Define exponential with offset model
-    def exp_offset(x, A, B, C):
-        return A * np.exp(-B * (x - 0)) + C
-
-    # Initial guesses
-    C0 = np.median(dRdI[-10:])                     # plateau at high I
-    A0 = np.max(dRdI) - C0                         # amplitude of decay
-    B0 = 1.0 / (max(fcurrent) - min(fcurrent))     # decay rate estimate
-    p0 = [A0, B0, C0]
-
-    # Fit the model
-    popt, _ = curve_fit(
-        exp_offset,
-        fcurrent,
-        dRdI,
-        p0=p0,
-        bounds=([0, 0, 0], [np.inf, np.inf, np.inf])
-    )
-
-    # Generate fitted curve
-    fcurrent_fit = np.linspace(min(fcurrent), max(fcurrent), 500)
-    dRdI_fit = exp_offset(fcurrent_fit, *popt)
-
-    # Plot
-    fig3, ax3 = plt.subplots()
-    ax3.scatter(fcurrent, dRdI, color='blue', marker='o', label="dV/dI (Differential Resistance)")
-    ax3.plot(fcurrent_fit, dRdI_fit, color='red', linewidth=2,
-            label=(f"Fit: A·exp(-B·x) + C\n"
-                    f"A={popt[0]:.2f}, B={popt[1]:.4f}, C={popt[2]:.2f}"))
-
-    # Labels and title
-    ax3.set_title("Differential Resistance (dV/dI) vs Current")
-    ax3.set_xlabel("Current (mA)")
-    ax3.set_ylabel("dV/dI (Ohms)")
-    ax3.grid(True)
-    ax3.legend()
-
-    # Save the differential resistance plot
-    svg_filename3 = base_name + "_dVdIcurve.svg"
-    save_path_svg3 = os.path.join(save_dir, svg_filename3)
-    fig3.savefig(save_path_svg3, format="svg", bbox_inches="tight")
-    print(f"Saved dV/dI curve svg to {save_path_svg3}")
-
-    png_filename3 = base_name + "_dVdIcurve.png"
-    save_path_png3 = os.path.join(save_dir, png_filename3)
-    fig3.savefig(save_path_png3, format="png", bbox_inches="tight")
-    print(f"Saved dV/dI curve png to {save_path_png3}")
-
-    # PLOT LI curves
-    print("plotting LI curve")
     num_valid = len(valid_channels)
     if num_valid == 0:
         print("No valid channels to plot.")
@@ -326,34 +243,23 @@ def process_wlm(file_path_str, output_folder=None):
         cmap = mpl.colormaps['inferno']
         colours = cmap(np.linspace(0, 1, num_valid))
         for idx, (i, ch) in enumerate(valid_channels):
-            print(f"Processing Channel {i} with {len(ch)} data points.")
-            proc_ch = ch
+            #if wavelength.max() > 1000:
+            #    proc_ch = ch[wavelength > 1000]
+            #else:
+            #    proc_ch = ch
 
+            proc_ch = ch
             # Generate axis ticks
             ch_ticks = get_ticks(proc_ch, 5, 4)
             i_ticks = get_ticks(fcurrent, 4, 3)
 
             fig, ax = plt.subplots()
             ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
-            #ax.set_xticks(i_ticks)
-            #ax.set_xticklabels(i_ticks)
-            #ax.set_yticks(ch_ticks)
-            #ax.set_yticklabels(ch_ticks)
-            if threshold_Is[i] > 0:
-                ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            ax.legend()
-            ax.set_title(f"Current vs Power - Channel {i}")
-            ax.set_xlabel("Current (mA)")
-            ax.set_ylabel("Power (mW)")
-            ax.grid(True)
-
-            # LI Curves
-            fig, ax = plt.subplots()
-            ax.plot(fcurrent, proc_ch, color='black', marker='o')
-            ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+            ax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
             #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
             #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
 
+            
             #ax.set_xticks(i_ticks)
             #ax.set_xticklabels(i_ticks)
             #ax.set_yticks(ch_ticks)
@@ -361,10 +267,7 @@ def process_wlm(file_path_str, output_folder=None):
             ax.set_title(f"Current vs Power - Channel {i}")
             ax.set_xlabel("Current (mA)")
             ax.set_ylabel("Power (mW)")
-            ax.legend()
             ax.grid(True)
-            
-
 
             # Save the channel plot as an SVG file in the output folder
             svg_filename = base_name + f"_LI_channel{i}.svg"
@@ -377,36 +280,76 @@ def process_wlm(file_path_str, output_folder=None):
             save_path_png = os.path.join(save_dir, png_filename)
             fig.savefig(save_path_png, format="png", bbox_inches="tight")
             print(f"Saved channel {i} plot to {save_path_png}")
-    
-    #Plot WL vs Temp and WL vs Current
-    print("plotting WL vs Temp and WL vs Current")
-        # WL vs Temp plot
+            plt.close(fig)  # Close the figure to free memory
+
+    # Create and save the current vs voltage (IV) plot
+    if current is not None and voltage is not None:
+        if current.max() > 1000:
+            fcurrent_IV = current[wavelength > 1000]
+            fvoltage_IV = voltage[wavelength > 1000]
+        else:
+            fcurrent_IV = current
+            fvoltage_IV = voltage
+
+        i_ticks_IV = get_ticks(fcurrent_IV, 4, 3)
+        v_ticks_IV = get_ticks(fvoltage_IV, 4, 2)
+
+        ivfig, ivax = plt.subplots()
+        ivax.plot(fcurrent_IV, fvoltage_IV, color='black', marker='o')
+        ivax.set_title("IV Curve")
+        ivax.set_xlabel("Current (mA)")
+        ivax.set_ylabel("Voltage (V)")
+        ivax.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
+        #ivax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
+        #ivax.axhline(y=peak_power_V, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
+
+
+       # ivax.set_xticks(i_ticks_IV)
+        #ivax.set_xticklabels(i_ticks_IV)
+        #ivax.set_yticks(v_ticks_IV)
+        #ivax.set_yticklabels(v_ticks_IV)
+        #ivax.grid(True)
+
+        # Save the IV plot as an SVG file in the output folder
+        iv_filename = base_name + "_IV.svg"
+        save_path_iv = os.path.join(save_dir, iv_filename)
+        ivfig.savefig(save_path_iv, format="svg", bbox_inches="tight")
+        print(f"Saved IV plot to {save_path_iv}")
+        # Optionally, close the figure: plt.close(ivfig)
+
+        
+        # Save the IV plot as an SVG file in the output folder
+        iv_filename1 = base_name + "_IV.png"
+        save_path_iv = os.path.join(save_dir, iv_filename1)
+        ivfig.savefig(save_path_iv, format="png", bbox_inches="tight")
+        print(f"Saved IV plot to {save_path_iv}")
+        # Optionally, close the figure: plt.close(ivfig)
+
+    # WL vs Temp plot
     if wavelength is not None and temperature is not None:
         fig, ax = plt.subplots()
-        mask = wavelength > 1000
-        ax.scatter(wavelength[mask], temperature[mask], color='black', marker='o')
-        ax.set_title("Temperature vs Wavelength")
-        ax.set_ylabel("Temperature (C)")
-        ax.set_xlabel("Wavelength (nm)")
+        ax.plot(temperature, wavelength, color='black', marker='o')
+        ax.set_title("Wavelength vs Temperature")
+        ax.set_xlabel("Temperature (C)")
+        ax.set_ylabel("Wavelength (nm)")
         ax.grid(True)
 
         # Save the WL vs Temp plot as an SVG file in the output folder
-        wl_temp_filename = base_name + "_Temp_vs_WL.svg"
+        wl_temp_filename = base_name + "_WL_vs_Temp.svg"
         save_path_wl_temp = os.path.join(save_dir, wl_temp_filename)
         fig.savefig(save_path_wl_temp, format="svg", bbox_inches="tight")
-        print(f"Saved Temperature vs Wavelength plot to {save_path_wl_temp}")
+        print(f"Saved Wavelength vs Temperature plot to {save_path_wl_temp}")
         
          # Save the WL vs Temp plot as an SVG file in the output folder
         wl_temp_filename1 = base_name + "_WL_vs_Temp.png"
         save_path_wl_temp1 = os.path.join(save_dir, wl_temp_filename1)
         fig.savefig(save_path_wl_temp1, format="png", bbox_inches="tight")
-        print(f"Saved Temperature vs Wavelength plot to {save_path_wl_temp1}")
+        print(f"Saved IV plot to {save_path_wl_temp1}")
 
     # WL vs current plot
     if wavelength is not None and current is not None:
         fig, ax = plt.subplots()
-        mask = wavelength > 1000
-        ax.scatter(current[mask], wavelength[mask], color='black', marker='o')
+        ax.plot(current, wavelength, color='black', marker='o')
         ax.set_title("Wavelength vs Current")
         ax.set_xlabel("Current (mA)")
         ax.set_ylabel("Wavelength (nm)")
@@ -425,32 +368,5 @@ def process_wlm(file_path_str, output_folder=None):
         wl_current_filename1 = base_name + "_WL_vs_Current.png"
         save_path_wl_current1 = os.path.join(save_dir, wl_current_filename1)
         fig.savefig(save_path_wl_current1, format="png", bbox_inches="tight")
-        print(f"Saved  Wavelength vs Current plot to {save_path_wl_current1}")
+        print(f"Saved IV plot to {save_path_wl_current1}")
 
-
-def main():
-    import sys
-    from tkinter import Tk, simpledialog
-    from tkinter.filedialog import askopenfilename
-    from tkinter.filedialog import askdirectory
-
-    # Hide the root window
-    root = Tk()
-    root.withdraw()
-
-    # Ask for the file path
-    file_path = askopenfilename(title="Select a LIV CSV File", filetypes=[("CSV files", "*.csv")])
-    if not file_path:
-        print("No file selected. Exiting.")
-        sys.exit(0)
-
-    # Ask for the output folder
-    output_folder = askdirectory(title="Select Output Folder (Cancel for same location)")
-    if not output_folder:
-        output_folder = None
-
-    # Process the LIV file
-    process_wlm(file_path, output_folder)
-
-if __name__ == "__main__":
-    main()

@@ -7,9 +7,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multi_select
 
+"""
+    Central script for extracting data from .mat files and plotting results. This is intended to be used with files 
+    produced by the most recent version of process_csv.py. It is IMPERATIVE that the .mat files are produced by the 
+    most recent version of process_csv.py, otherwise this script will fail. This is because the data collection method 
+    looks for specific variable names in the .mat files, which may differ between versions.
 
-# This script is designed to extract data from .mat files and plot the results.
-# .mat fliles must have been produced from (MOST RECENT VERSION OF) data.py or it will fail. 
+    Creates and updates a dictionary with the data of intrest (items to extract and use in comparison plots).
+
+    If run directly, compiles and plots the extracted data from the .mat files in a user-selected folder (and its subfolders).
+"""
 
 def extract_liv(mat_file_path):
     print("LIV Extraction")
@@ -416,14 +423,17 @@ def main():
                                 dictionaries["osa"]["IDtag"].append(IDtag)
                                 data = extract_osa(file_path)
                                 update_osa_dict(dictionaries, data, file_path)
+                                print(dictionaries["osa"])
                             elif comp_mode == "wlm":
                                 dictionaries["wlm"]["IDtag"].append(IDtag)
                                 data = extract_wlm(file_path)
                                 update_wlm_dict(dictionaries, data, file_path)
+                                print(dictionaries["wlm"])
                             elif comp_mode == "liv":
                                 dictionaries["liv"]["IDtag"].append(IDtag)
                                 data = extract_liv(file_path)
-                                print("liv not functional yet")
+                                print(dictionaries["liv"])
+                                #print("liv not functional yet")
                         except Exception as e:
                             # Print the full file name and a summary of the error, then continue.
                             print(f"Failed processing file: {file_path}\nReason: {str(e)}\n")

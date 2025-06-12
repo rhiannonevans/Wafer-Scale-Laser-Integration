@@ -1,3 +1,12 @@
+"""
+    Filters and detects trends in LIV data using gradient and elbow methods. 
+    The code identifies significant points in the data that indicate a trend, specifically the threshold current point, then guesses
+    the true threshold point based on the intersection of multiple detection methods.
+
+    If run as a script, it processes LIV data from specified .mat files, detects trends, and plots the results. This is ideal for troubleshooting
+    new ways of detecting threshold currents - will show you a plot of all detected points (gradient, elbow, and weighted threshold) for each channel in the LIV data
+"""
+
 
 import pandas as pd
 import extract as ex

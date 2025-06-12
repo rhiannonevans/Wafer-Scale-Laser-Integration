@@ -1,6 +1,19 @@
+"""
+    Main processing script for CSV files. Will detect file type based on naming conventions and process accordingly. 
+    If a file has been processed previously, it will overwrite the previous outputs with the most up-to-date (including .mat file and all plots).
+    User can select to process all files in a folder or a single file, and choose the processing mode (which file type(s) to process).
+    Will create an output folder named after the file (without extension) in the same directory as the file. All outputs (.mat and plots)
+    are saved in this folder.
+
+    For details on processing, see the respective modules: `osa`, `liv`, and `wlm`.
+
+    [Author: Rhiannon H Evans]
+    [Date: 2025-06-12]
+"""
+
 import osa
 import liv  
-import wlm3 as wlm  
+import wlm as wlm  
 import os
 from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename
