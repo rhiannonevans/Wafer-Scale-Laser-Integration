@@ -226,28 +226,50 @@ def setup_compdictionaries():
     }
     return comp_dict
 
-def update_osa_dict(comp_dict, data):
+def update_osa_dict(comp_dict, data, file_path=None):
     # Update the OSA dictionary with data from the .mat file.
+    peak_sweep = data.get('peak_sweep', None)
+
     if 'peak_power' in data:
-        arr = data['peak_power'].flatten()
-        comp_dict["osa"]["peak_power"].append(float(np.max(arr)) if arr.size > 0 else None)
-        print("Saved peak power")
-        print(comp_dict["osa"]["peak_power"])
+        arr = data['peak_power']
+        try:
+            val = arr[peak_sweep].flatten()[0] if peak_sweep is not None else np.max(arr)
+            comp_dict["osa"]["peak_power"].append(float(val))
+            print("Saved peak power")
+        except Exception as e:
+            print(f"Error saving peak power: {e}")
+            comp_dict["osa"]["peak_power"].append(None)
+
     if 'peak_power_I' in data:
-        arr = data['peak_power_I'].flatten()
-        comp_dict["osa"]["peak_power_I"].append(float(np.max(arr)) if arr.size > 0 else None)
-        print("Saved peak power current")
-        print(comp_dict["osa"]["peak_power_I"])
-    if 'peak_power_wl' in data: 
-        arr = data['peak_power_wl'].flatten()
-        comp_dict["osa"]["peak_power_wl"].append(float(np.max(arr)) if arr.size > 0 else None)
-        print("Saved peak power wl")
-        print(comp_dict["osa"]["peak_power_wl"])
+        try:
+            arr = data['peak_power_I'].flatten()
+            val = arr[peak_sweep] if peak_sweep is not None else np.max(arr)
+            comp_dict["osa"]["peak_power_I"].append(float(val))
+            print("Saved peak power current")
+        except Exception as e:
+            print(f"Error saving peak power current: {e}")
+            comp_dict["osa"]["peak_power_I"].append(None)
+
+    if 'peak_power_wl' in data:
+        try:
+            arr = data['peak_power_wl'].flatten()
+            val = arr[peak_sweep] if peak_sweep is not None else np.max(arr)
+            comp_dict["osa"]["peak_power_wl"].append(float(val))
+            print("Saved peak power wl")
+        except Exception as e:
+            print(f"Error saving peak power wl: {e}")
+            comp_dict["osa"]["peak_power_wl"].append(None)
+
     if 'peak_power_temp' in data:
-        arr = data['peak_power_temp'].flatten()
-        comp_dict["osa"]["peak_power_temp"].append(float(np.max(arr)) if arr.size > 0 else None)
-        print("Saved peak power temp")
-        print(comp_dict["osa"]["peak_power_temp"])
+        try:
+            arr = data['peak_power_temp'].flatten()
+            val = arr[peak_sweep] if peak_sweep is not None else np.max(arr)
+            comp_dict["osa"]["peak_power_temp"].append(float(val))
+            print("Saved peak power temp")
+        except Exception as e:
+            print(f"Error saving peak power temp: {e}")
+            comp_dict["osa"]["peak_power_temp"].append(None)
+
 
 def update_wlm_dict(comp_dict, data, file_path):
     # Update the WLM dictionary with data from the .mat file.
@@ -299,6 +321,13 @@ def get_IDtag(file):
 
     # Find the substring containing 'R' followed by a number
     rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
+
+    # # Find the index of chipstring in file_name_parts
+    # if chipstring and chipstring in file_name_parts:
+    #     chip_idx = file_name_parts.index(chipstring)
+    #     idstring = "_".join(file_name_parts[chip_idx:])
+    # else:
+    #     print("Something went horribly wrong, check your file naming conventions.")
 
     # Extract the end of the file name (excluding the file extension)
     file_base_name = os.path.splitext(file)[0]
@@ -408,6 +437,8 @@ def main():
                 for file in files:
                     if file.endswith(".mat"):
                         file_path = os.path.join(current_root, file)
+                        IDtag = get_IDtag(file)
+                        print(f"Processing file: {file_path} with IDtag: {IDtag}")
 
                         if "osa" not in file.lower() and comp_mode == "osa":
                             print(f"Skipping file (not OSA): {file_path}")
@@ -432,6 +463,7 @@ def main():
                             elif comp_mode == "liv":
                                 dictionaries["liv"]["IDtag"].append(IDtag)
                                 data = extract_liv(file_path)
+                                update_liv_dict(dictionaries, data, file_path)
                                 print(dictionaries["liv"])
                                 #print("liv not functional yet")
                         except Exception as e:

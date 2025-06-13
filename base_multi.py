@@ -18,9 +18,17 @@ import matplotlib.cm as cm
     or current vs peak power and threshold current for LIV/WLM data. The plots will be saved in the parent folder as PNG and SVG files.
 """
 
-def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path = None):
+def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path = None, remove_outliers=True, outlier_threshold=-70):
+        ## Filters out data for which max power is below a certain threshold (default -70 dBm)
+        if remove_outliers:
+            filtered_data = [(x, y) for x, y in zip(data1, data2) if y >= outlier_threshold]
+            if filtered_data:
+                data1, data2 = zip(*filtered_data)
+            else:
+                data1, data2 = [], []
+        
         plt.figure()
-        plt.scatter(data1, data2, c=data2, cmap=cm.get_cmap('inferno'), alpha=0.7)
+        plt.scatter(data1, data2, c=data2, cmap=plt.get_cmap('inferno'), alpha=0.7)
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
@@ -33,7 +41,14 @@ def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path 
             plt.savefig(svg_path, bbox_inches='tight')
         else:
             print("Error: parent_path is None. Cannot save the plot.")
-        plt.show()
+
+def mat_file_exists_anywhere(parent_path, file_base_name):
+    mat_filename = f"{file_base_name}.mat"
+    for current_root, dirs, files in os.walk(parent_path):
+        if mat_filename in files:
+            return True
+    return False
+        
 
 def main():
     # Initialize Tkinter and hide the root window.
@@ -89,6 +104,14 @@ def main():
         else:
             print("Invalid processing mode selection. Exiting.")
             return
+
+                # Ask if the user wants to overwrite existing .mat files
+        overwrite_choice = simpledialog.askstring("Overwrite Existing Files", 
+                                    "Overwrite existing .mat files? (y = overwrite, n = skip existing):")
+        if not overwrite_choice:
+            print("No overwrite choice selected. Exiting.")
+            return
+        overwrite_existing = overwrite_choice.strip().lower() == 'y'
         
         if selection_choice == '1':
             files_to_run = []
@@ -106,6 +129,9 @@ def main():
                             print(f"Skipping file (unselected):  {file_base_name}")
                         else:
                             try:
+                                if mat_file_exists_anywhere(parent_path, file_base_name) and not overwrite_existing:
+                                    print(f"Skipping existing file: {file_base_name}.mat (found in subdirectory)")
+                                    continue
                                 process_csv.process_file(file_path, process_mode, base_folder=parent_path)
                             except Exception as e:
                                 # Print the full file name and a summary of the error, then continue.
@@ -128,14 +154,14 @@ def main():
                 print(dataD)
                 if process_mode == 'osa':
                     # Aggregate data across all files before plotting
-                    peak_power_I = []
-                    peak_power = []
-                    peak_power_wl = []
-                    for file_data in dataD["osa"].values():
-                        if isinstance(file_data, dict):
-                            peak_power_I.extend(file_data.get("peak_power_I", []))
-                            peak_power.extend(file_data.get("peak_power", []))
-                            peak_power_wl.extend(file_data.get("peak_power_wl", []))
+                    peak_power_I = dataD["osa"].get("peak_power_I", [])
+                    peak_power = dataD["osa"].get("peak_power", [])
+                    peak_power_wl = dataD["osa"].get("peak_power_wl", [])
+                    # for file_data in dataD["osa"].values():
+                    #     if isinstance(file_data, dict):
+                    #         peak_power_I.extend(file_data.get("peak_power_I", []))
+                    #         peak_power.extend(file_data.get("peak_power", []))
+                    #         peak_power_wl.extend(file_data.get("peak_power_wl", []))
                     print("Plotting current power comparison...")
                     plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting wl power comparison...")
