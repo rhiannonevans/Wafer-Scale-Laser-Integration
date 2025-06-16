@@ -150,7 +150,7 @@ def main():
                         "Would you like to compare the processed files? (y/n):")
         if compare_choice and compare_choice.strip().lower() == 'y':
             try:
-                dataD = extract.iterate_files(parent_path, selection_choice, files_to_run)
+                dataD = extract.iterate_files(parent_path, selection_choice, process_mode, files_to_run)
                 print(dataD)
                 if process_mode == 'osa':
                     # Aggregate data across all files before plotting

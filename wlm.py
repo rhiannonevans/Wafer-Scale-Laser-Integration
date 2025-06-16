@@ -20,7 +20,7 @@ def process_wlm(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
-    import threshold
+    import threshold as thresh
     from scipy.optimize import curve_fit
 
     # Helper function to generate nicely spaced tick values
@@ -181,7 +181,7 @@ def process_wlm(file_path_str, output_folder=None):
                 print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
                 threshold_Is.append(0.2)
             else:
-                threshold = threshold.fit_guess(current, ch, show=False)
+                threshold = thresh.fit_guess(current, ch, show=False)
                 if threshold is None or threshold == 0:
                     print(f"No threshold found for channel {i}. Setting to 0.")
                     threshold_Is.append(0)

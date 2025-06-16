@@ -66,7 +66,7 @@ def process_file(file_path, process_mode, base_folder=None):
     else:
         print(f"Skipping {file_path}: does not meet OSA criteria. Skipping...")
 
-    if process_mode == "liv_wlm":
+    if process_mode == "liv" or process_mode == "wlm":
         if liv_condition:
             print(f"Processing {file_path} as LIV")
             liv.process_liv(file_path, output_folder)

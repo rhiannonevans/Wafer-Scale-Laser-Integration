@@ -21,7 +21,7 @@ def process_liv(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
-    import threshold
+    import threshold as thresh
     from scipy.optimize import curve_fit
 
     # Helper function to generate nicely spaced tick values
@@ -129,7 +129,7 @@ def process_liv(file_path_str, output_folder=None):
     print(channels)
 
     # Determine the "data" channel based on the largest average value
-    data_channel_index = None
+    data_channel_index = ch1_idx  # Default to channel 1 if it exists
     max_average = -np.inf
     for i, ch in enumerate(channels):
         if ch is not None:
@@ -164,19 +164,22 @@ def process_liv(file_path_str, output_folder=None):
                 print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
                 threshold_Is.append(0.2)
             else:
-                threshold = threshold.fit_guess(current, ch, show=False)
+                threshold = thresh.fit_guess(current, ch, show=False)
                 if threshold is None or threshold == 0:
                     print(f"No threshold found for channel {i}. Setting to 0.")
                     threshold_Is.append(0)
                 else:
                     threshold_Is.append(threshold)
                     print(f"Threshold current for channel {i}: {threshold}mA")
+                
+                if i == ch1_idx:
+                    ch1_threshold = threshold
 
     
 
     #print("Threshold currents:", threshold_Is)
     data_dict["threhold_currents"] = threshold_Is
-    data_dict["threshold_ch1"] = threshold_Is[ch1_idx]
+    data_dict["threshold_ch1"] = ch1_threshold
 
     # Formulate comparison data (Max power of data channel and assoc current)
     if data_channel_index is not None:
