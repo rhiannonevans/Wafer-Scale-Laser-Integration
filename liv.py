@@ -195,6 +195,7 @@ def process_liv(file_path_str, output_folder=None):
     else:
         print("No valid data channel found for peak power calculation.")
 
+    print(data_dict)
     # Determine the output directory
     if output_folder is not None:
         save_dir = output_folder

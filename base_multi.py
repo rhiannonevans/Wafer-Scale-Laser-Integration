@@ -180,7 +180,7 @@ def main():
                     print("Plotting peak power v current comparison...")
                     plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting threshold current (channel 1) by peak power comparison...")
-                    plot_scatter(IDs, ch1_threshI,"Measurement ID", "Threshold Current (mA)","Peak Power by Current Comparison", "threshI_comparison", parent_path)               
+                    plot_scatter(ch1_threshI, peak_power,"Threshold Current (mA)","Peak Power (mW)","Peak Power by Threshold current", "threshI_comparison", parent_path)               
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
     finally:

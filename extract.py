@@ -20,7 +20,7 @@ import multi_select
 
 def extract_liv(mat_file_path):
     print("LIV Extraction")
-    vars = ['peak_power', 'peak_power_I', 'threshold_currents']
+    vars = ['peak_power', 'peak_power_I', 'threshold_ch1']
     data = read_mat_file(mat_file_path, vars)
     return data
 
@@ -33,7 +33,7 @@ def extract_osa(mat_file_path):
 
 def extract_wlm(mat_file_path):
     print("WLM Extraction")
-    vars = ['peak_power', 'peak_power_I', 'threshold_currents', 'peak_power_WL', 'peak_power_V']
+    vars = ['peak_power', 'peak_power_I', 'threshold_ch1', 'peak_power_WL', 'peak_power_V']
     data = read_mat_file(mat_file_path, vars)
     print(data)
     return data
