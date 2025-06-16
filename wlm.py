@@ -176,19 +176,18 @@ def process_wlm(file_path_str, output_folder=None):
             data_dict[f"channel_{i}"] = ch
             print(f"Saved channel {i}:")
             
-            # Assumes there is no threshold if data starts above 0.2A - implies threshold has been passed
-            if current[1] >= 0.2:
+            # Assumes there is no threshold if data starts above 20mA - implies threshold has been passed
+            if current[1] >= 20:
                 print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
-                threshold_Is.append(0)
+                threshold_Is.append(0.2)
             else:
-                points = threshold.detect_trend_gradient(ch, current) if threshold.detect_trend_gradient(ch, current) else None
-                tidx = points[0] if points is not None else None                
-                if tidx is None:
-                    print(f"No threshold index found for channel {i}. Setting to 0.")
+                threshold = threshold.fit_guess(current, ch, show=False)
+                if threshold is None or threshold == 0:
+                    print(f"No threshold found for channel {i}. Setting to 0.")
                     threshold_Is.append(0)
                 else:
-                    threshold_Is.append(current[tidx])
-                    print(f"Threshold current index is {tidx} for channel {i}: {current[tidx]}mA")
+                    threshold_Is.append(threshold)
+                    print(f"Threshold current for channel {i}: {threshold}mA")
 
     
 

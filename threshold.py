@@ -207,6 +207,54 @@ def smooth_data(data):
     smooth = np.array(ema)
     return smooth
 
+from scipy.optimize import curve_fit
+
+def piecewise_linear(I, Ith, a, b):
+    """
+    I   : array of currents
+    Ith : threshold current
+    a   : slope above threshold
+    b   : baseline output below threshold
+    """
+    return np.where(I < Ith,
+                    b,
+                    a * (I - Ith) + b)
+
+def fit_guess(I_data, L_data, show=True):
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    # initial guesses: 
+    #   Ith ~ the midpoint of your current range,
+    #   a   ~ (max(L)-min(L)) / (max(I)-min(I)),
+    #   b   ~ min(L)
+    p0 = [I_data.mean(), 
+        (L_data.max() - L_data.min())/(I_data.max() - I_data.min()), 
+        L_data.min()]
+
+    # optionally constrain Ith to lie within [min(I), max(I)]
+    bounds = ([I_data.min(),    0,       -np.inf],
+            [I_data.max(),  np.inf,    np.inf])
+
+    popt, pcov = curve_fit(piecewise_linear,
+                        I_data, L_data,
+                        p0=p0, bounds=bounds)
+
+    Ith_fit, a_fit, b_fit = popt
+    print(f"Threshold current Ith = {Ith_fit:.3f} mA")
+    
+    if show:
+        I_fine = np.linspace(I_data.min(), I_data.max(), 200)
+        L_fine = piecewise_linear(I_fine, *popt)
+
+        ax.plot(I_data, L_data,   'o', label="data")
+        ax.plot(I_fine, L_fine,  '-', label="piecewise fit")
+        ax.axvline(Ith_fit, color='k', ls='--', label=f"Ith = {Ith_fit:.3f}")
+        ax.set_xlabel("Current (mA)")
+        ax.set_ylabel("Power")
+        #plt.legend()
+        plt.show()
+        
+    return Ith_fit
 
 def main():
     print("Starting trend detection...")
@@ -214,13 +262,13 @@ def main():
 
     path0 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_03_16_16_15_12_loopTEST_liv_1310nm_ChipA1_R0/2025_03_16_16_15_12_loopTEST_liv_1310nm_ChipA1_R0.mat"
     path1 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_03_16_16_56_11_hangzouTEST_liv_1310nm_ChipA1_R1/2025_03_16_16_56_11_hangzouTEST_liv_1310nm_ChipA1_R1.mat"
-    #path2 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22.mat"
+    path2 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22/2025_05_07_21_39_43_LIV_wlm_1310nm_ChipC31_R1__iter22.mat"
     #path3 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
     #path4 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25.mat"
     #path5 = "C:/Users/OWNER/Desktop/LIV_0604_2/LIV/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16.mat"
     #path6 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
     #path7 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25.mat"
-    paths = [path0, path1]
+    paths = [path0, path1, path2]
     for path in paths:
         print(f"Processing file: {path}")
         mat_data = scipy.io.loadmat(path)
@@ -249,31 +297,33 @@ def main():
                 continue
             print(f"Channel {i} Data:")
 
-            smoothed = smooth_data(channel)
-            gradpts = detect_trend_gradient(channel, current)
+            thresh_I = fit_guess(current, channel)
 
-            fig, ax = plt.subplots()
-            ax.scatter(current, smoothed, color='magenta', label=f'Smooth Data (ch{i})', alpha=0.5)
-            ax.scatter(current, channel, color='black', label=f'Raw Data (ch{i})', alpha=0.5)
+            # smoothed = smooth_data(channel)
+            # gradpts = detect_trend_gradient(channel, current)
+
+            # fig, ax = plt.subplots()
+            # ax.scatter(current, smoothed, color='magenta', label=f'Smooth Data (ch{i})', alpha=0.5)
+            # ax.scatter(current, channel, color='black', label=f'Raw Data (ch{i})', alpha=0.5)
             
-            for point in gradpts:
-                print(f"GRAD - Current: {current[point]}, Power: {channel[point]} mW")
-                ax.axvline(x=current[point], color='red', linestyle='--', label='Threshold Current', alpha=0.5)
-            # epoints = detect_trend_elbow(channel, current)
-            # for point in epoints:
-            #     print(f"ELBOW - Current: {current[point]}, Power: {channel[point]} mW")
-            #     ax.axvline(x=current[point], color='blue', linestyle='dotted', label='Threshold Current', alpha=0.5)
-            elbowpts = find_elbow_smoothed(channel,current)
-            for point in elbowpts:
-                print(f"ELBOW SMOOTHED - Current: {current[point]}, Power: {channel[point]} mW")
-                ax.axvline(x=current[point], color='green', linestyle='dashdot', label='Threshold Current', alpha=0.5)
+            # for point in gradpts:
+            #     print(f"GRAD - Current: {current[point]}, Power: {channel[point]} mW")
+            #     ax.axvline(x=current[point], color='red', linestyle='--', label='Threshold Current', alpha=0.5)
+            # # epoints = detect_trend_elbow(channel, current)
+            # # for point in epoints:
+            # #     print(f"ELBOW - Current: {current[point]}, Power: {channel[point]} mW")
+            # #     ax.axvline(x=current[point], color='blue', linestyle='dotted', label='Threshold Current', alpha=0.5)
+            # elbowpts = find_elbow_smoothed(channel,current)
+            # for point in elbowpts:
+            #     print(f"ELBOW SMOOTHED - Current: {current[point]}, Power: {channel[point]} mW")
+            #     ax.axvline(x=current[point], color='green', linestyle='dashdot', label='Threshold Current', alpha=0.5)
             
-            guess = find_weighted_threshold(gradpts, elbowpts)
-            if guess is not None:
-                print(f"Weighted Threshold Current: {current[guess]}, Power: {channel[guess]} mW")
-                ax.axvline(x=current[guess], color='magenta', label='Weighted Threshold Current', alpha=0.5)
-            else:
-                print("No common threshold candidates found.")
+            # guess = find_weighted_threshold(gradpts, elbowpts)
+            # if guess is not None:
+            #     print(f"Weighted Threshold Current: {current[guess]}, Power: {channel[guess]} mW")
+            #     ax.axvline(x=current[guess], color='magenta', label='Weighted Threshold Current', alpha=0.5)
+            # else:
+            #     print("No common threshold candidates found.")
     plt.show()
 
 if __name__ == '__main__':
