@@ -90,6 +90,6 @@ The following plots and characteristic data (for comparison), and a .mat file co
 
 ### FOR LIV COMPARISONS
 "peak_power_current_comparison"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/peak_power_current_comparison.png)<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/2a45a94c490c01f5cdd217cef295cbc9b0bda1d4/Documentation/peak_power_current_comparison.png)<br>
 "threshI_comparison"<br>
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison.png)<br>
