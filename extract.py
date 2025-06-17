@@ -296,34 +296,13 @@ def update_liv_dict(comp_dict, data, file_path):
 
 
 def get_IDtag(file):
+    # Extract everything from "Chip" (inclusive) up to the last '.' (not inclusive)
     file_base_name = os.path.splitext(file)[0]
-    file_name_parts = file.split('_')
-
-    # Find the substring containing "Chip" followed by numbers
-    chipstring = next((part for part in file_name_parts if part.startswith("Chip") and any(char.isdigit() for char in part)), None)
-
-    # Find the substring containing 'R' followed by a number
-    rstring = next((part for part in file_name_parts if part.startswith("R") and any(char.isdigit() for char in part)), None)
-
-    # # Find the index of chipstring in file_name_parts
-    # if chipstring and chipstring in file_name_parts:
-    #     chip_idx = file_name_parts.index(chipstring)
-    #     idstring = "_".join(file_name_parts[chip_idx:])
-    # else:
-    #     print("Something went horribly wrong, check your file naming conventions.")
-
-    # Extract the end of the file name (excluding the file extension)
-    file_base_name = os.path.splitext(file)[0]
-    end_identifier = file_base_name.split('_')[-1]
-
-    # Create the IDtag
-    if chipstring and rstring and end_identifier:
-        IDtag = f"{chipstring}_{rstring}_{end_identifier}"
-    elif chipstring and rstring:
-        IDtag = f"{chipstring}_{rstring}_Unknown"
+    if "Chip" in file_base_name:
+        chip_start = file_base_name.find("Chip")
+        IDtag = file_base_name[chip_start:]
     else:
         IDtag = "Unknown_ID"
-
     print(f"Processing file: {file_base_name} with IDtag: {IDtag}")
     return IDtag
 
