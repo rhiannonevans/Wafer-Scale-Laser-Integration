@@ -63,31 +63,26 @@ def process_file(file_path, process_mode, base_folder=None):
     if process_mode == "osa" and osa_condition:
         print(f"Processing {file_path} as OSA")
         osa.sweep_osa(file_path, output_folder)
-    else:
-        print(f"Skipping {file_path}: does not meet OSA criteria. Skipping...")
+    
+    if process_mode == "liv" and liv_condition:
+        print(f"Processing {file_path} as LIV")
+        liv.process_liv(file_path, output_folder)
+    if process_mode == "wlm" and wlm_condition:
+        print(f"Processing {file_path} as WLM")
+        wlm.process_wlm(file_path, output_folder)
 
-    if process_mode == "liv" or process_mode == "wlm":
-        if liv_condition:
-            print(f"Processing {file_path} as LIV")
-            liv.process_liv(file_path, output_folder)
-        elif wlm_condition:
-            print(f"Processing {file_path} as WLM")
-            wlm.process_wlm(file_path,output_folder)
-        else:
-            print(f"Skipping {file_path}: qualifies as OSA, not WLM. Skipping...")
-
-    if process_mode == "all":
-        if osa_condition:
-            print(f"Processing {file_path} as OSA (all mode)")
-            osa.sweep_osa(file_path, output_folder)
-        elif wlm_condition:
-            print(f"Processing {file_path} as WLM (all mode)")
-            wlm.process_wlm(file_path, output_folder)
-        elif liv_condition:
-            print(f"Processing {file_path} as LIV (all mode)")
-            liv.process_liv(file_path)  # Uncomment to use LIV instead of WLM
-        else:
-            print(f"Skipping {file_path}: name must contain 'osa', 'liv', or 'wlm'. Skipping...")
+    # if process_mode == "all":
+    #     if osa_condition:
+    #         print(f"Processing {file_path} as OSA (all mode)")
+    #         osa.sweep_osa(file_path, output_folder)
+    #     elif wlm_condition:
+    #         print(f"Processing {file_path} as WLM (all mode)")
+    #         wlm.process_wlm(file_path, output_folder)
+    #     elif liv_condition:
+    #         print(f"Processing {file_path} as LIV (all mode)")
+    #         liv.process_liv(file_path)  # Uncomment to use LIV instead of WLM
+    #     else:
+    #         print(f"Skipping {file_path}: name must contain 'osa', 'liv', or 'wlm'. Skipping...")
 
 
 
@@ -114,8 +109,8 @@ def main():
             processing_choice = simpledialog.askstring("Processing Mode", 
                                         "Select processing mode for folder:\n"
                                         "(1) OSA files only\n"
-                                        "(2) LIV + WLM files only\n"
-                                        "(3) All\nEnter 1, 2, or 3:")
+                                        "(2) LIV files only\n"
+                                        "(3) WLM files only\nEnter 1, 2, or 3:")
             if not processing_choice:
                 print("No processing mode selected. Exiting.")
                 return
@@ -124,9 +119,9 @@ def main():
             if processing_choice == '1':
                 process_mode = "osa"
             elif processing_choice == '2':
-                process_mode = "liv_wlm"
+                process_mode = "liv"
             elif processing_choice == '3':
-                process_mode = "all"
+                process_mode = "wlm"
             else:
                 print("Invalid processing mode selection. Exiting.")
                 return

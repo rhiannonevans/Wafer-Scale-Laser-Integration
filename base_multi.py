@@ -86,7 +86,7 @@ def main():
                                     "Select processing mode for folder:\n"
                                     "(1) OSA files only\n"
                                     "(2) LIV files only\n"
-                                    "(3) All\nEnter 1, 2, or 3:")
+                                    "(3) WLM files only\nEnter 1, 2, or 3:")
         if not processing_choice:
             print("No processing mode selected. Exiting.")
             return
@@ -99,8 +99,8 @@ def main():
             process_mode = "liv"
             print("Processing LIV...")
         elif processing_choice == '3':
-            process_mode = "both"
-            print("Processing all...")
+            process_mode = "wlm"
+            print("Processing WLM...")
         else:
             print("Invalid processing mode selection. Exiting.")
             return
@@ -180,7 +180,28 @@ def main():
                     print("Plotting peak power v current comparison...")
                     plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
                     print("Plotting threshold current (channel 1) by peak power comparison...")
-                    plot_scatter(ch1_threshI, peak_power,"Threshold Current (mA)","Peak Power (mW)","Peak Power by Threshold current", "threshI_comparison", parent_path)               
+                    plot_scatter(ch1_threshI, peak_power,"Threshold Current (mA)","Peak Power (mW)","Peak Power by Threshold current", "threshI_comparison", parent_path) 
+                elif process_mode == 'wlm':
+                    # Aggregate data across all files before plotting
+                    peak_power_I = dataD["wlm"].get("peak_power_I", [])
+                    peak_power = dataD["wlm"].get("peak_power", [])
+                    peak_power_wl = dataD["wlm"].get("peak_power_WL", [])
+                    ch1_threshI = dataD["wlm"].get("threshold_ch1", [])
+                    IDs = dataD["wlm"].get("IDTag", [])
+                    # for file_data in dataD["wlm"].values():
+                    #     if isinstance(file_data, dict):
+                    #         peak_power_I.extend(file_data.get("peak_power_I", []))
+                    #         peak_power.extend(file_data.get("peak_power", []))
+                    #         ch1_threshI.extend(file_data.get("threshold_ch1", []))
+                    print("Plotting peak power v current comparison...")
+                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    
+                    print("Plotting threshold current (channel 1) by peak power comparison...")
+                    plot_scatter(ch1_threshI, peak_power,"Threshold Current (mA)","Peak Power (mW)","Peak Power by Threshold current", "threshI_comparison", parent_path)
+                    
+                    print("Plotting wl by peak power comparison...")
+                    plot_scatter(peak_power_wl, peak_power,"Wavelength (nm)","Peak Power (mW)","Peak Power by Assoc. Wavelength", "wavelength_power_comparison", parent_path)
+                          
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
     finally:

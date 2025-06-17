@@ -144,20 +144,22 @@ def process_wlm(file_path_str, output_folder=None):
     else:
         ch1_idx = 0
 
-    # Determine the "data" channel based on the largest average value
-    data_channel_index = None
-    max_average = -np.inf
-    for i, ch in enumerate(channels):
-        if ch is not None:
-            avg_value = ch.mean()
-            if avg_value > max_average:
-                max_average = avg_value
-                data_channel_index = i
+    data_channel_index = ch1_idx  # Default to channel 1 (main signal)
 
-    if data_channel_index is not None:
-        print(f"Data channel determined: Channel {data_channel_index} with average value {max_average}")
-    else:
-        print("No valid data channel found.")
+    # # Determine the "data" channel based on the largest average value
+    # data_channel_index = None
+    # max_average = -np.inf
+    # for i, ch in enumerate(channels):
+    #     if ch is not None:
+    #         avg_value = ch.mean()
+    #         if avg_value > max_average:
+    #             max_average = avg_value
+    #             data_channel_index = i
+
+    # if data_channel_index is not None:
+    #     print(f"Data channel determined: Channel {data_channel_index} with average value {max_average}")
+    # else:
+    #     print("No valid data channel found.")
 
     # Build a dictionary with the core data for saving to a .mat file
     data_dict = {
@@ -200,9 +202,11 @@ def process_wlm(file_path_str, output_folder=None):
         peak_power = channels[data_channel_index].max()
         peak_power_I = current[channels[data_channel_index].idxmax()]
         peak_power_V = voltage[channels[data_channel_index].idxmax()]
+        peak_power_wl = wavelength[channels[data_channel_index].idxmax()]
         data_dict["peak_power_V"] = peak_power_V
         data_dict["peak_power"] = peak_power
         data_dict["peak_power_I"] = peak_power_I
+        data_dict["peak_power_WL"] = peak_power_wl
         print(f"Peak power: {data_dict['peak_power']}")
         print(f"Assoc Current: {data_dict['peak_power_I']}")
         print(f"Assoc Voltage: {data_dict['peak_power_V']}")

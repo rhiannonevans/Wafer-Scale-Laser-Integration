@@ -37,7 +37,7 @@ Opt to (1) run an individual file, (2) run all files in a parent folder, or (3) 
 (3) Select parent folder from first window, then select (check boxes for) desired files.
 
 
-Choose to process files of type (1) "OSA", (2) "LIV", or (3) to run all files (OSA and LIV). 
+Choose to process files of type (1) "OSA", (2) "LIV", or (3) "WLM". 
 
 The following plots and characteristic data (for comparison), and a .mat file containing the organized data, will be saved to a subfolder of the same name as your file.
 
@@ -75,8 +75,9 @@ Opt to (1) run all files in a parent folder or (2) run only select files from a 
 (1) Select parent folder (script will process all files in the parent folder, it will search through subfolders as well)
 (3) Select parent folder from first window, submit and from the next window select (check boxes for) desired files.
 
+Choose what to do for files which have been processed already and for which a .mat file exists. Either "y" to overwrite (re-process) or "n" to skip these files (use previously processed data).
 
-Choose to process files of type (1) "OSA" or (2) "LIV". 
+Choose to process files of type (1) "OSA", (2) "LIV", or (3) "WLM". 
 
 The following plots and characteristic data (for comparison), and a .mat file containing the organized data, will be saved to the parent folder.
 
@@ -93,3 +94,8 @@ The following plots and characteristic data (for comparison), and a .mat file co
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/2a45a94c490c01f5cdd217cef295cbc9b0bda1d4/Documentation/peak_power_current_comparison.png)<br>
 "threshI_comparison"<br>
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison.png)<br>
+
+### FOR WLM COMPARISONS
+All LIV Comparisons<br><br>
+"wavelength_power_comparison"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/wavelength_power_comparison.png)

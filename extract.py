@@ -33,7 +33,7 @@ def extract_osa(mat_file_path):
 
 def extract_wlm(mat_file_path):
     print("WLM Extraction")
-    vars = ['peak_power', 'peak_power_I', 'threshold_ch1', 'peak_power_WL', 'peak_power_V']
+    vars = ['peak_power', 'peak_power_I', 'threshold_ch1', 'peak_power_WL']
     data = read_mat_file(mat_file_path, vars)
     print(data)
     return data
@@ -112,7 +112,7 @@ def plot_wlm(data_dict, folder_path):
     # Extract data for plotting
     peak_power = data.get('peak_power', [])
     peak_power_I = data.get('peak_power_I', [])
-    threshold_current = data.get('threshold_current', [])
+    threshold_current = data.get('threshold_ch1', [])
     peak_power_WL = data.get('peak_power_WL', [])
     peak_power_V = data.get('peak_power_V', [])
 
@@ -134,7 +134,7 @@ def plot_wlm(data_dict, folder_path):
     print("Plot 1 successful - peak power vs current")
     
     plt.subplot(2, 2, 2)
-    plt.scatter(peak_power_V, peak_power, label='Peak Power by Assoc Wavelength')
+    plt.scatter(peak_power_WL, peak_power, label='Peak Power by Assoc Wavelength')
     plt.xlabel('Wavelength (nm)')
     plt.ylabel('Peak Power (mW)')
     plt.title('Peak Power - Assoc Wavelength')
@@ -166,7 +166,7 @@ def plot_liv(data_dict, folder_path):
     # Extract data for plotting
     peak_power = data.get('peak_power', [])
     peak_power_I = data.get('peak_power_I', [])
-    threshold_currents = data.get('threshold_currents', [])
+    threshold_currents = data.get('threshold_ch1', [])
 
     print(f"Peak Power: {peak_power}")
     print(f"Peak Power I: {peak_power_I}")
@@ -213,7 +213,6 @@ def setup_compdictionaries():
             "peak_power": [],
             "peak_power_I": [],
             "peak_power_WL": [],
-            "peak_power_V": [],
         },
         "liv": {
             "IDtag": [],
@@ -333,12 +332,13 @@ def update(comp_dict, file_path, file, process_mode):
     if 'osa' in file.lower() and process_mode == 'osa':
         data = extract_osa(file_path)
         update_osa_dict(comp_dict, data, file_path)
-    elif 'wlm' in file.lower() and process_mode == 'wlm':
-        data = extract_wlm(file_path)
-        update_wlm_dict(comp_dict, data, file_path)
-    elif 'liv' in file.lower() and process_mode == 'liv':
-        data = extract_liv(file_path)
-        update_liv_dict(comp_dict, data, file_path)
+    else:
+        if 'wlm' in file.lower() and process_mode == 'wlm':
+            data = extract_wlm(file_path)
+            update_wlm_dict(comp_dict, data, file_path)
+        if 'liv' in file.lower() and process_mode == 'liv':
+            data = extract_liv(file_path)
+            update_liv_dict(comp_dict, data, file_path)
 
 def iterate_files(parent_path, selection_mode='1', comp_mode ='osa', selected_files=None):
     dictionaries = setup_compdictionaries()
