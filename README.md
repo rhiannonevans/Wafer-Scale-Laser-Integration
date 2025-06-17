@@ -55,8 +55,8 @@ The following plots and characteristic data (for comparison), and a .mat file co
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_05_29_19_51_09_bothLIVwlm_1330nm_channel4_ChipD30_R0_clad_LI_channel2.png)<br>
 "filename_IVcurve"<br>
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6_IVcurve.png)<br>
-"filename_dVdIcurve"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_05_08_16_09_17_LIV_wlm_1310nm_ChipC31_R1__iter14_dVdIcurve.png)<br>
+"filename_I_dVdIcurve"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_05_29_19_51_09_bothLIVwlm_1330nm_channel4_ChipD30_R0_clad_I_dVdIcurve.png)<br>
 
 (The last two are omitted if there is no useful wavelength data in the csv)<br>
 "filename_WL_vs_Current"<br>

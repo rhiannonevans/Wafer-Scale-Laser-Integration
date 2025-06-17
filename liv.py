@@ -259,57 +259,48 @@ def process_liv(file_path_str, output_folder=None):
     # Calculate differential resistance (dV/dI) vs I
     dI = np.gradient(fcurrent)
     dV = np.gradient(voltage)
-    dRdI = dV / dI
-    dRdI = dRdI * 1000  # Convert to Ohms
+    R = dV / dI
+    I=fcurrent
+    IdVdI = I*R  # Convert to Ohms
 
-    # Define exponential with offset model
-    def exp_offset(x, A, B, C):
-        return A * np.exp(-B * (x - 0)) + C
+    # Define model: power law with offset
+    def model(I, a, b, c):
+        return a * I**b + c
 
-    # Initial guesses
-    C0 = np.median(dRdI[-10:])                     # plateau at high I
-    A0 = np.max(dRdI) - C0                         # amplitude of decay
-    B0 = 1.0 / (max(fcurrent) - min(fcurrent))     # decay rate estimate
-    p0 = [A0, B0, C0]
+    # Initial guess for parameters
+    p0 = [0.01, 1.0, 0.1]
 
-    # Fit the model
-    popt, _ = curve_fit(
-        exp_offset,
-        fcurrent,
-        dRdI,
-        p0=p0,
-        bounds=([0, 0, 0], [np.inf, np.inf, np.inf])
-    )
+    # Fit the model to data
+    params, _ = curve_fit(model, I, IdVdI, p0=p0)
+    a, b, c = params
 
     # Generate fitted curve
-    fcurrent_fit = np.linspace(min(fcurrent), max(fcurrent), 500)
-    dRdI_fit = exp_offset(fcurrent_fit, *popt)
+    I_fit = np.linspace(min(I), max(I), 200)
+    fit_vals = model(I_fit, *params)
 
     # Plot
     fig3, ax3 = plt.subplots()
-    ax3.scatter(fcurrent, dRdI, color='blue', marker='o', label="dV/dI (Differential Resistance)")
-    ax3.plot(fcurrent_fit, dRdI_fit, color='red', linewidth=2,
-            label=(f"Fit: A·exp(-B·x) + C\n"
-                    f"A={popt[0]:.2f}, B={popt[1]:.4f}, C={popt[2]:.2f}"))
+    ax3.scatter(I, IdVdI, label='I*dV/dI (data)', color='blue')
+    ax3.plot(I_fit, fit_vals, label=f'Fit: {a:.4f} * I^{b:.4f} + {c:.4f}', color='red')
 
     # Labels and title
-    ax3.set_title("Differential Resistance (dV/dI) vs Current")
+    ax3.set_title("Current * Differential Resistance (I*dV/dI) vs Current")
     ax3.set_xlabel("Current (mA)")
-    ax3.set_ylabel("dV/dI (Ohms)")
+    ax3.set_ylabel("I*dV/dI (Ohm*mA)")
     ax3.grid(True)
     ax3.legend()
 
 
     # Save the differential resistance plot
-    svg_filename3 = base_name + "_dVdIcurve.svg"
+    svg_filename3 = base_name + "_I_dVdIcurve.svg"
     save_path_svg3 = os.path.join(save_dir, svg_filename3)
     fig3.savefig(save_path_svg3, format="svg", bbox_inches="tight")
     print(f"Saved dV/dI curve svg to {save_path_svg3}")
 
-    png_filename3 = base_name + "_dVdIcurve.png"
+    png_filename3 = base_name + "_I_dVdIcurve.png"
     save_path_png3 = os.path.join(save_dir, png_filename3)
     fig3.savefig(save_path_png3, format="png", bbox_inches="tight")
-    print(f"Saved dV/dI curve png to {save_path_png3}")
+    print(f"Saved I*dV/dI curve png to {save_path_png3}")
 
 
     #plotting LI curves
