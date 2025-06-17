@@ -52,8 +52,7 @@ def mat_file_exists_anywhere(parent_path, file_base_name):
         
 
 def main():
-    #start timer to track processing time
-    start_time = time.time()
+    
 
     # Initialize Tkinter and hide the root window.
     root = Tk()
@@ -116,6 +115,9 @@ def main():
             print("No overwrite choice selected. Exiting.")
             return
         overwrite_existing = overwrite_choice.strip().lower() == 'y'
+
+        #start timer to track processing time
+        start_time = time.time()
         
         if selection_choice == '1':
             files_to_run = []
@@ -152,10 +154,13 @@ def main():
         # Print the total processing time.
         print(f"Took {time.time()-start_time:.2f} seconds to process {len(files_to_run)} files.")
 
+        start_prompt_time = time.time()
         # Ask the user if they would like to compare the files.
         compare_choice = simpledialog.askstring("Compare Files", 
                         "Would you like to compare the processed files? (y/n):")
         start_comp_time = time.time()
+        prompt_deadtime = start_comp_time - start_prompt_time
+
         if compare_choice and compare_choice.strip().lower() == 'y':
             try:
                 dataD = extract.iterate_files(parent_path, selection_choice, process_mode, files_to_run)
@@ -243,7 +248,7 @@ def main():
         root.destroy()
     # Print the total processing time.
     print(f"Took: {time.time()-start_comp_time:.2f} seconds to compare {len(files_to_run)} files.")
-    print(f"Total script time: {time.time()-start_time:.2f} seconds")
+    print(f"Total script time: {time.time()-start_time - prompt_deadtime:.2f} seconds")
 
 if __name__ == '__main__':
     main()
