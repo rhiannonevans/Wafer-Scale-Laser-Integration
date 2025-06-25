@@ -17,6 +17,8 @@ import time
 
     If user chooses to compare files, it will extract relevant data from the processed files and plot either current vs peak power and wavelength vs peak power for OSA data,
     or current vs peak power and threshold current for LIV/WLM data. The plots will be saved in the parent folder as PNG and SVG files.
+
+    [Author: Rhiannon H Evans]
 """
 
 def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path = None, remove_outliers=True, outlier_threshold=-70):
@@ -151,9 +153,7 @@ def main():
                         if selection_choice == '1':
                             files_to_run.append(file_base_name)
 
-        # Print the total processing time.
-        print(f"Took {time.time()-start_time:.2f} seconds to process {len(files_to_run)} files.")
-
+        
         start_prompt_time = time.time()
         # Ask the user if they would like to compare the files.
         compare_choice = simpledialog.askstring("Compare Files", 
@@ -176,9 +176,9 @@ def main():
                     #         peak_power.extend(file_data.get("peak_power", []))
                     #         peak_power_wl.extend(file_data.get("peak_power_wl", []))
                     print("Plotting current power comparison...")
-                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_osa", parent_path)
                     print("Plotting wl power comparison...")
-                    plot_scatter(peak_power_wl, peak_power, "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Assoc. Wavelength Comparison", "peak_power_wl_comparison", parent_path) 
+                    plot_scatter(peak_power_wl, peak_power, "Peak Power Wavelength (nm)", "Peak Power (mW)", "Peak Power by Assoc. Wavelength Comparison", "peak_power_wl_comparison_osa", parent_path) 
                 elif process_mode == 'liv':
                     # Aggregate data across all files before plotting
                     peak_power_I = dataD["liv"].get("peak_power_I", [])
@@ -192,24 +192,24 @@ def main():
                     #         ch1_threshI.extend(file_data.get("threshold_ch1", []))
                     print("Plotting peak power v current comparison...")
                     # Only plot points where peak power > 1e-6
-                    plot_scatter(filtered_peak_power_I, filtered_peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_liv", parent_path)
                     filtered = [(i, p) for i, p in zip(peak_power_I, peak_power) if p > 1e-6]
                     if filtered:
                         filtered_peak_power_I, filtered_peak_power = zip(*filtered)
+                        plot_scatter(peak_power_I, filtered_peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_filtered_liv", parent_path)
                     else:
                         filtered_peak_power_I, filtered_peak_power = [], []
-                    plot_scatter(filtered_peak_power_I, filtered_peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_filtered", parent_path)
                     
                     print("Plotting threshold current (channel 1) by peak power comparison...")
-                    plot_scatter(filtered_ch1_threshI, filtered_peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison", parent_path)
+                    plot_scatter(ch1_threshI, peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison_liv", parent_path)
 
                     # Only plot points where current (ch1_threshI) < 20
                     filtered = [(i, p) for i, p in zip(ch1_threshI, peak_power) if i < 20]
                     if filtered:
                         filtered_ch1_threshI, filtered_peak_power = zip(*filtered)
+                        plot_scatter(filtered_ch1_threshI, filtered_peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison_filtered_liv", parent_path)
                     else:
                         filtered_ch1_threshI, filtered_peak_power = [], []
-                    plot_scatter(filtered_ch1_threshI, filtered_peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison_filtered", parent_path)
                 elif process_mode == 'wlm':
                     # Aggregate data across all files before plotting
                     peak_power_I = dataD["wlm"].get("peak_power_I", [])
@@ -224,29 +224,29 @@ def main():
                     #         ch1_threshI.extend(file_data.get("threshold_ch1", []))
                     print("Plotting peak power v current comparison...")
                     # Only plot points where peak power > 1e-6
-                    plot_scatter(filtered_peak_power_I, filtered_peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison", parent_path)
+                    plot_scatter(peak_power_I, peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_wlm", parent_path)
                     filtered = [(i, p) for i, p in zip(peak_power_I, peak_power) if p > 1e-6]
                     if filtered:
                         filtered_peak_power_I, filtered_peak_power = zip(*filtered)
+                        plot_scatter(filtered_peak_power_I, filtered_peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_filtered_wlm", parent_path)
                     else:
                         filtered_peak_power_I, filtered_peak_power = [], []
-                    plot_scatter(filtered_peak_power_I, filtered_peak_power, "Peak Power Current (mA)", "Peak Power (mW)", "Peak Power by Current Comparison", "peak_power_current_comparison_filtered", parent_path)
                     
                     print("Plotting threshold current (channel 1) by peak power comparison...")
-                    plot_scatter(filtered_ch1_threshI, filtered_peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison", parent_path)
-
+                    plot_scatter(ch1_threshI, peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison_wlm", parent_path)
                     # Only plot points where current (ch1_threshI) < 20
                     filtered = [(i, p) for i, p in zip(ch1_threshI, peak_power) if i < 20]
                     if filtered:
                         filtered_ch1_threshI, filtered_peak_power = zip(*filtered)
+                        plot_scatter(filtered_ch1_threshI, filtered_peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison_filtered_wlm", parent_path)     
                     else:
                         filtered_ch1_threshI, filtered_peak_power = [], []
-                    plot_scatter(filtered_ch1_threshI, filtered_peak_power, "Threshold Current (mA)", "Peak Power (mW)", "Peak Power by Threshold current (I < 20 mA)", "threshI_comparison_filtered", parent_path)     
             except Exception as e:
                 print(f"Failed to compare files.\nReason: {str(e)}\n")
     finally:
         root.destroy()
     # Print the total processing time.
+    print(f"Took {start_prompt_time-start_time:.2f} seconds to process {len(files_to_run)} files.")
     print(f"Took: {time.time()-start_comp_time:.2f} seconds to compare {len(files_to_run)} files.")
     print(f"Total script time: {time.time()-start_time - prompt_deadtime:.2f} seconds")
 

@@ -16,6 +16,8 @@ import multi_select
     Creates and updates a dictionary with the data of intrest (items to extract and use in comparison plots).
 
     If run directly, compiles and plots the extracted data from the .mat files in a user-selected folder (and its subfolders).
+
+    [Author: Rhiannon H Evans]
 """
 
 def extract_liv(mat_file_path):
@@ -37,6 +39,27 @@ def extract_wlm(mat_file_path):
     data = read_mat_file(mat_file_path, vars)
     print(data)
     return data
+
+def check_mode(file, process_mode):
+    """
+    Check if the file matches the processing mode.
+    
+    Parameters:
+    - file: str, name of the file to check
+    - process_mode: str, processing mode ('osa', 'wlm', 'liv')
+    
+    Returns:
+    - bool, True if the file matches the processing mode, False otherwise
+    """
+    file_lower = file.lower()
+    if process_mode == 'osa':
+        return 'osa' in file_lower
+    elif process_mode == 'wlm':
+        return 'wlm' in file_lower
+    elif process_mode == 'liv':
+        return 'liv' in file_lower
+    else:
+        return False
 
 
 def read_mat_file(mat_file_path, variables):
@@ -313,6 +336,7 @@ def update(comp_dict, file_path, file, process_mode):
         update_osa_dict(comp_dict, data, file_path)
     else:
         if 'wlm' in file.lower() and process_mode == 'wlm':
+            print("WLM FLAG")
             data = extract_wlm(file_path)
             update_wlm_dict(comp_dict, data, file_path)
         if 'liv' in file.lower() and process_mode == 'liv':
@@ -323,7 +347,7 @@ def iterate_files(parent_path, selection_mode='1', comp_mode ='osa', selected_fi
     dictionaries = setup_compdictionaries()
     for current_root, dirs, files in os.walk(parent_path):
         for file in files:
-            if file.endswith(".mat"):
+            if file.endswith(".mat") and check_mode(file, comp_mode):
                 file_path = os.path.join(current_root, file)
                 file_base_name = os.path.splitext(file)[0]
                 IDtag = get_IDtag(file)

@@ -8,12 +8,11 @@
     For details on processing, see the respective modules: `osa`, `liv`, and `wlm`.
 
     [Author: Rhiannon H Evans]
-    [Date: 2025-06-12]
 """
 
 import osa
 import liv  
-import wlm as wlm  
+import wlm
 import os
 from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename

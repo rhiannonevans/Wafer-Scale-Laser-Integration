@@ -11,18 +11,67 @@
     [Author: Rhiannon H Evans]
     [Date: 2025-06-12]
 """
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import scipy.io
+import threshold as thresh
+from scipy.optimize import curve_fit
 
+def plot_li():
+    """
+    Placeholder function for plotting LI curves.
+    This function is not implemented yet.
+    """
+    print("This function is not implemented yet.")
+    return
+
+def plot_iv(current, voltage, base_name, save_dir):
+    """
+    Placeholder function for plotting IV curves.
+    This function is not implemented yet.
+    """
+    fig2, ax2 = plt.subplots()
+    ax2.plot(current, voltage, color='black', marker='o', label="IV Curve")
+    ax2.set_title(f"Current vs Voltage")
+    ax2.set_xlabel("Current (mA)")
+    ax2.set_ylabel("Voltage (V)")
+    ax2.grid(True)
+
+    #save svg
+    svg_filename2 = base_name + f"_IVcurve.svg"
+    save_path_svg2 = os.path.join(save_dir, svg_filename2)
+    fig2.savefig(save_path_svg2, format="svg", bbox_inches="tight")
+    print(f"Saved IV curve svg to {save_path_svg2}")
+    #save png
+    png_filename2 = base_name + f"_IVcurve.png"
+    save_path_png2 = os.path.join(save_dir, png_filename2)
+    fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
+    print(f"Saved IV curve png to {save_path_png2}") 
+
+    return
+
+def plot_differential():
+    """
+    Placeholder function for plotting differential resistance curves.
+    This function is not implemented yet.
+    """
+    print("This function is not implemented yet.")
+    return
+
+def find_threshold():
+    """
+    Placeholder function for finding threshold currents.
+    This function is not implemented yet.
+    """
+    print("This function is not implemented yet.")
+    return
 
 
 def process_liv(file_path_str, output_folder=None):
-    import os
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import matplotlib as mpl
-    import scipy.io
-    import threshold as thresh
-    from scipy.optimize import curve_fit
+
 
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
@@ -153,34 +202,6 @@ def process_liv(file_path_str, output_folder=None):
     print("Data dictionary initialized")
 
 
-    threshold_Is = []
-    for i, ch in enumerate(channels):
-        if ch is not None:
-            data_dict[f"channel_{i}"] = ch
-            print(f"Saved channel {i}:")
-            
-            # Assumes there is no threshold if data starts above 20mA - implies threshold has been passed
-            if current[1] >= 20:
-                print(f"Initial current is above 0.2A, skipping threshold detection for all channels.")
-                threshold_Is.append(0.2)
-            else:
-                threshold = thresh.fit_guess(current, ch, show=False)
-                if threshold is None or threshold == 0:
-                    print(f"No threshold found for channel {i}. Setting to 0.")
-                    threshold_Is.append(0)
-                else:
-                    threshold_Is.append(threshold)
-                    print(f"Threshold current for channel {i}: {threshold}mA")
-                
-                if i == ch1_idx:
-                    ch1_threshold = threshold
-
-    
-
-    #print("Threshold currents:", threshold_Is)
-    data_dict["threhold_currents"] = threshold_Is
-    data_dict["threshold_ch1"] = ch1_threshold
-
     # Formulate comparison data (Max power of data channel and assoc current)
     if data_channel_index is not None:
         peak_power = channels[data_channel_index].max()
@@ -204,14 +225,8 @@ def process_liv(file_path_str, output_folder=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + ".mat"
-    save_path_mat = os.path.join(save_dir, mat_filename)
-    scipy.io.savemat(save_path_mat, data_dict)
-    print(f"Data dictionary saved to {save_path_mat}")
-    print(data_dict)
 
-    fcurrent = current
+
     # Dummy noise-check function (replace with your actual noise check if available)
     noise_threshold = 10 ** -30
     def noisy(val, threshold):
@@ -234,134 +249,45 @@ def process_liv(file_path_str, output_folder=None):
     print("plotting IV curve")
 
     # Plot IV Curve
-    fig2, ax2 = plt.subplots()
-    ax2.plot(fcurrent, voltage, color='black', marker='o', label="IV Curve")
-    #ax2.axvline(x=current[tidx], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-    #ax2.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-    ax2.set_title(f"Current vs Voltage")
-    ax2.set_xlabel("Current (mA)")
-    ax2.set_ylabel("Voltage (V)")
-    ax2.grid(True)
+    plot_iv(current, voltage, base_name, save_dir)
 
-    #save svg
-    svg_filename2 = base_name + f"_IVcurve.svg"
-    save_path_svg2 = os.path.join(save_dir, svg_filename2)
-    fig2.savefig(save_path_svg2, format="svg", bbox_inches="tight")
-    print(f"Saved IV curve svg to {save_path_svg2}")
-     #save png
-    png_filename2 = base_name + f"_IVcurve.png"
-    save_path_png2 = os.path.join(save_dir, png_filename2)
-    fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
-    print(f"Saved IV curve png to {save_path_png2}") 
+    print("plotting differential resistance curve")
 
-    # PLOT differential resistance (dV/dI vs I)    
-
-    # Calculate differential resistance (dV/dI) vs I
-    dI = np.gradient(fcurrent)
-    dV = np.gradient(voltage)
-    R = dV / dI
-    I=fcurrent
-    IdVdI = I*R  # Convert to Ohms
-
-    # Define model: power law with offset
-    def model(I, a, b, c):
-        return a * I**b + c
-
-    # Initial guess for parameters
-    p0 = [0.01, 1.0, 0.1]
-
-    # Fit the model to data
-    params, _ = curve_fit(model, I, IdVdI, p0=p0)
-    a, b, c = params
-
-    # Generate fitted curve
-    I_fit = np.linspace(min(I), max(I), 200)
-    fit_vals = model(I_fit, *params)
-
-    # Plot
-    fig3, ax3 = plt.subplots()
-    ax3.scatter(I, IdVdI, label='I*dV/dI (data)', color='blue')
-    ax3.plot(I_fit, fit_vals, label=f'Fit: {a:.4f} * I^{b:.4f} + {c:.4f}', color='red')
-
-    # Labels and title
-    ax3.set_title("Current * Differential Resistance (I*dV/dI) vs Current")
-    ax3.set_xlabel("Current (mA)")
-    ax3.set_ylabel("I*dV/dI (Ohm*mA)")
-    ax3.grid(True)
-    ax3.legend()
+    # PLOT differential resistance (dV/dI vs I)   
+    thresh.fit_idvdi(current, voltage, base_name, save_dir)
 
 
-    # Save the differential resistance plot
-    svg_filename3 = base_name + "_I_dVdIcurve.svg"
-    save_path_svg3 = os.path.join(save_dir, svg_filename3)
-    fig3.savefig(save_path_svg3, format="svg", bbox_inches="tight")
-    print(f"Saved dV/dI curve svg to {save_path_svg3}")
 
-    png_filename3 = base_name + "_I_dVdIcurve.png"
-    save_path_png3 = os.path.join(save_dir, png_filename3)
-    fig3.savefig(save_path_png3, format="png", bbox_inches="tight")
-    print(f"Saved I*dV/dI curve png to {save_path_png3}")
+    #plotting LI curves + finding threshold
+    ch1_threshold = 0
+    ch_thresholds = []
 
-
-    #plotting LI curves
-    print("plotting LI curve")
+    print("plotting LI curve and finding threshold for each channel")
     num_valid = len(valid_channels)
     if num_valid == 0:
         print("No valid channels to plot.")
     else:
-        cmap = mpl.colormaps['inferno']
-        colours = cmap(np.linspace(0, 1, num_valid))
         for idx, (i, ch) in enumerate(valid_channels):
             print(f"Processing Channel {i} with {len(ch)} data points.")
-            proc_ch = ch
-
-            # Generate axis ticks
-            ch_ticks = get_ticks(proc_ch, 5, 4)
-            i_ticks = get_ticks(fcurrent, 4, 3)
-
-            fig, ax = plt.subplots()
-            ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
-            #ax.set_xticks(i_ticks)
-            #ax.set_xticklabels(i_ticks)
-            #ax.set_yticks(ch_ticks)
-            #ax.set_yticklabels(ch_ticks)
-            if threshold_Is[i] > 0:
-                ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            ax.legend()
-            ax.set_title(f"Current vs Power - Channel {i}")
-            ax.set_xlabel("Current (mA)")
-            ax.set_ylabel("Power (mW)")
-            ax.grid(True)
-
-            # LI Curves
-            fig, ax = plt.subplots()
-            ax.plot(fcurrent, proc_ch, color='black', marker='o', label=f"Channel {i}")
-            ax.axvline(x=threshold_Is[i], color='red', linestyle='--', label='Threshold Current') #vertical line at threshold current
-            #ax.axvline(x=peak_power_I, color='blue', linestyle='--', label='Current at Peak Power') #vertical line at threshold current
-            #ax.axhline(y=peak_power, color='blue', linestyle='--', label='Peak Power') #horizontal line at peak power
-
-            #ax.set_xticks(i_ticks)
-            #ax.set_xticklabels(i_ticks)
-            #ax.set_yticks(ch_ticks)
-            #ax.set_yticklabels(ch_ticks)
-            ax.set_title(f"Current vs Power - Channel {i}")
-            ax.set_xlabel("Current (mA)")
-            ax.set_ylabel("Power (mW)")
-            ax.grid(True)
             
+            # Plot all LIV curves (+derivative) and find threshold
+            ch_threshold = thresh.run_liv(current, ch, base_name, save_dir, i)
+            ch_thresholds.append(ch_threshold)
+            if ch1_idx == i:
+                ch1_threshold = ch_threshold
+                print(f"Channel 1 threshold: {ch1_threshold} mA")
+    
+    # Save the thresholds to the data dictionary
+    data_dict["threhold_currents"] = ch_thresholds
+    data_dict["threshold_ch1"] = ch1_threshold
 
-
-            # Save the channel plot as an SVG file in the output folder
-            svg_filename = base_name + f"_LI_channel{i}.svg"
-            save_path_svg = os.path.join(save_dir, svg_filename)
-            fig.savefig(save_path_svg, format="svg", bbox_inches="tight")
-            print(f"Saved channel {i} plot to {save_path_svg}")
-            # Optionally, close the figure: plt.close(fig)
-            # Save the channel plot as an PNG file in the output folder
-            png_filename = base_name + f"_LI_channel{i}.png"
-            save_path_png = os.path.join(save_dir, png_filename)
-            fig.savefig(save_path_png, format="png", bbox_inches="tight")
-            print(f"Saved channel {i} plot to {save_path_png}")
+    # Finally, save the data dictionary to a .mat file
+    # Save the data dictionary to a .mat file in the output folder
+    mat_filename = base_name + ".mat"
+    save_path_mat = os.path.join(save_dir, mat_filename)
+    scipy.io.savemat(save_path_mat, data_dict)
+    print(f"Data dictionary saved to {save_path_mat}")
+    print(data_dict)
 
 
 def main():

@@ -1,10 +1,10 @@
 """
-    Filters and detects trends in LIV data using gradient and elbow methods. 
-    The code identifies significant points in the data that indicate a trend, specifically the threshold current point, then guesses
-    the true threshold point based on the intersection of multiple detection methods.
+    Filters and detects trends in LIV data using first and second derivatives of the log power.
 
     If run as a script, it processes LIV data from specified .mat files, detects trends, and plots the results. This is ideal for troubleshooting
-    new ways of detecting threshold currents - will show you a plot of all detected points (gradient, elbow, and weighted threshold) for each channel in the LIV data
+    new ways of detecting threshold currents 
+
+    [Author: Rhiannon H Evans]
 """
 
 
@@ -12,249 +12,211 @@ import pandas as pd
 import extract as ex
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import gaussian_filter1d
-from scipy.signal import savgol_filter
 from collections import Counter
+import os
 
 
-#Call only if power > -20 dBm
-def detect_trend(data):
-    df = pd.DataFrame(data)
-    pois = []
-    # Calculate moving averages once for efficiency
-    shortMA = df.rolling(window=3).mean()
-    longMA = df.rolling(window=5).mean()  # Use a longer window for trend
-    # Detect significant positive crossover: shortMA crosses above longMA
-    cross = (shortMA[0] > longMA[0]) & (shortMA[0].shift(1) <= longMA[0].shift(1))
-    # Only consider points where power > -40 dBm
-    for idx in cross[cross].index:
-        pois.append(idx)
-        # if -10 > np.log(df[0][idx]) > -40:
-        #     pois.append(idx)
-    return pois
 
-def detect_trend_gradient(data, current):
-    data = np.array(data)
-    current = np.array(current)
+def fit_idvdi(I,V, base_name=None, save_dir=None):
+    from scipy.interpolate import UnivariateSpline
+    from scipy.signal import argrelextrema
+
+    # Calculate dV/dI
+    dV_dI = np.gradient(V, I)
+    I_dVdI = I*dV_dI 
+
+    # Fit a smooth curve
+    spline = UnivariateSpline(I, I_dVdI, s=0.001)  # s is smoothing factor
+    I_fit = np.linspace(I.min(), I.max(), 2000)
+    I_dVdI_fit = spline(I_fit)
+
+
+    # Plot
+    fig = plt.figure(figsize=(8, 5))
+    plt.plot(I, I_dVdI, label='I*dV/dI', alpha=0.6)
+    plt.plot(I_fit, I_dVdI_fit, 'r--', label='Spline Fit')
+    plt.xlabel('Current (mA)')
+    plt.ylabel('I*dV/dI (V)')
+    plt.title('Differential vs Current')
+    plt.legend()
+    #plt.xlim(0,15)
+    plt.grid(True)
+    plt.tight_layout()
+    #plt.show()
+
+    if base_name is not None and save_dir is not None:
+        # Save the differential resistance plot
+        svg_filename3 = base_name + "_I_dVdIcurve.svg"
+        save_path_svg3 = os.path.join(save_dir, svg_filename3)
+        fig.savefig(save_path_svg3, format="svg", bbox_inches="tight")
+        print(f"Saved dV/dI curve svg to {save_path_svg3}")
+
+        png_filename3 = base_name + "_I_dVdIcurve.png"
+        save_path_png3 = os.path.join(save_dir, png_filename3)
+        fig.savefig(save_path_png3, format="png", bbox_inches="tight")
+        print(f"Saved I*dV/dI curve png to {save_path_png3}")
+
+    return
+
+def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
+
+    L=np.log(channel)
+    print(I)
+
+    # Mask for 4 < I < 20 mA
+    mask = (I > 4) & (I < 20)
+    I_sub = I[mask]
+    L_sub = L[mask]
+    print(f"Subtracted I: {I_sub}")
+    # Compute first and second derivatives
+    d1 = np.diff(L_sub)
+    d2 = np.diff(d1)
+    # The x-axis for the first and second derivatives
+    I_d1 = I_sub[1:]
+    I_d2 = I_sub[2:]
+    # Find the index of the maximum second derivative (threshold) and/or first derivative (maximum jump)
+    if I.iloc[0] >= 20:
+        print("Warning: Current starts at or above 20mA, skipping threshold analysis.")
+        threshold_current_1st = None
+        threshold_current_2nd = None
+    else:
+        threshold_idx_2nd = np.argmax(d2)
+        threshold_current_2nd = I_d2.iloc[threshold_idx_2nd]
+        print(f"Threshold (second derivative max) at I = {threshold_current_2nd:.3f} mA")
+        threshold_idx_1st = np.argmax(np.abs(d1))
+        threshold_current_1st = I_d1.iloc[threshold_idx_1st]
+        print(f"Maximum jump (first derivative max) at I = {threshold_current_1st:.3f} mA")
     
-    # Smooth the data
-    #smoothed = gaussian_filter1d(data, sigma=2)
-    # alpha = 0.2  # Smoothing factor between 0 and 1
-    # ema = [data[0]]
-    # for d in data[1:]:
-    #     ema.append(alpha * d + (1 - alpha) * ema[-1])
-    # smoothed = np.array(ema)
 
-    # from scipy.signal import butter, filtfilt
-    # b, a = butter(N=2, Wn=0.1)  # N=order, Wn=normalized cutoff frequency
-    # smoothed = filtfilt(b, a, data)
 
-    smoothed = smooth_data(data)
+    #PLOT second and first derivatives
+
+    if base_name is not None and save_dir is not None and threshold_current_2nd is not None:
+        # Create a new figure with two subplots side by side for fig2 and fig3
+        fig_combined, (ax2, ax3) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # Plot second derivative on the left
+        ax2.plot(I_d2, d2, marker='o', label='Second derivative')
+        if threshold_current_2nd is not None:
+            ax2.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+        ax2.set_xlabel("Current (mA)")
+        ax2.set_ylabel("Second derivative of log(Power)")
+        ax2.set_title(f"Ch {ch_i}: Second Derivative of log(Power) vs Current")
+        ax2.legend()
+        ax2.grid(True)
+
+        # Plot first derivative on the right
+        ax3.plot(I_d1, d1, marker='o', label='First derivative')
+        if threshold_current_1st is not None:
+            ax3.axvline(threshold_current_1st, color='blue', linestyle='--', label=f'First Deriv. Max at {threshold_current_1st:.2f} mA')
+        ax3.set_xlabel("Current (mA)")
+        ax3.set_ylabel("First derivative of log(Power)")
+        ax3.set_title(f"Ch {ch_i}: First Derivative of log(Power) vs Current")
+        ax3.legend()
+        ax3.grid(True)
+
+        fig_combined.tight_layout()
+
+        # Save the combined figure as SVG and PNG
+        svg_filename_combined = base_name + f"_derivatives_ch{ch_i}.svg"
+        save_path_svg_combined = os.path.join(save_dir, svg_filename_combined)
+        fig_combined.savefig(save_path_svg_combined, format="svg", bbox_inches="tight")
+        print(f"Saved combined derivatives plot to {save_path_svg_combined}")
+
+        png_filename_combined = base_name + f"_derivatives_ch{ch_i}.png"
+        save_path_png_combined = os.path.join(save_dir, png_filename_combined)
+        fig_combined.savefig(save_path_png_combined, format="png", bbox_inches="tight")
+        print(f"Saved combined derivatives plot to {save_path_png_combined}")
+    else:
+        # Plot the second derivative
+        fig2 = plt.figure(figsize=(8, 6))
+        plt.plot(I_d2, d2, marker='o', label='Second derivative')
+        if threshold_current_2nd is not None:
+            plt.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+        plt.xlabel("Current (mA)")
+        plt.ylabel("Second derivative of log(Power)")
+        plt.title("Second Derivative of log(Power) vs Current")
+        plt.legend()
+        plt.grid(True)
+
+        # Plot the first derivative
+        fig3 = plt.figure(figsize=(8, 6))
+        plt.plot(I_d1, d1, marker='o', label='First derivative')
+        if threshold_current_1st is not None:
+            plt.axvline(threshold_current_1st, color='blue', linestyle='--', label=f'First Deriv. Max at {threshold_current_1st:.2f} mA')
+        plt.xlabel("Current (mA)")
+        plt.ylabel("First derivative of log(Power)")
+        plt.title("First Derivative of log(Power) vs Current")
+        plt.legend()
+        plt.grid(True)
+
     
-    # Compute the gradient (dy/dx)
-    dy = np.gradient(smoothed)
-    dx = np.gradient(current)
-    gradient = dy / dx
-    pois = []
-    
-    # Find first point where slope exceeds threshold and stays high
-    for i in range(1, len(gradient)):
-        # Only consider if current (in mA) at i is less than 25 (30 to be generous) and greater than 8
-        if 8 < current[i] < 20:
-            # Calculate average gradient before i (all previous points) and after i (all following points)
-            before = gradient[:i]
-            after = gradient[i+1:]
-            integral_before = np.trapz(data[:i], current[:i]) if i > 1 else 0
-            integral_after = np.trapz(data[i:], current[i:]) if i < len(data) - 1 else 0
-            integral = integral_before + integral_after
-            if len(before) > 0 and len(after) > 0:
-                if np.mean(before) < np.mean(after) and integral_before/integral <= 0.001:
-                    pois.append(i)
-    # if not pois or all(p == 0 for p in pois):
-    #     # If no points found, decrease slope threshold and try again
-    #     step_size =  0.000005
-    #     new_slope = slope_threshold - step_size
-    #     if new_slope <= 0: # Avoid negative slope threshold, give up if data is not suitable
-    #         return [0] * len(pois)
-    #     print(f"No points found with slope threshold {slope_threshold}. Trying with {new_slope}...")
 
-    #     #recursively call the function with a lower slope threshold
-    #     detect_trend_gradient(data, current, new_slope)
+    if base_name is not None and save_dir is not None:
+        fig_combined, (ax2, ax3) = plt.subplots(1, 2, figsize=(14, 6))
 
-    return pois
+        # Plot LI (LOG) curve in dBm
+        ax2.plot(I, L, marker='o', label='Power (dBm)')
+        if threshold_current_2nd is not None:
+            ax2.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+        ax2.set_xlabel("Current (mA)")
+        ax2.set_ylabel("Power (dBm)")
+        ax2.set_title(f"Ch {ch_i}: Power (dBm) vs Current (mA)")
+        ax2.legend()
+        ax2.grid(True)
 
+        # Plot LI curve in mW
+        ax3.plot(I, channel, marker='o', label='Power (mW)')
+        if threshold_current_2nd is not None:
+            ax3.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+        ax3.set_xlabel("Current (mA)")
+        ax3.set_ylabel("Power (mW)")
+        ax3.set_title(f"Ch {ch_i}: Power (mW) vs Current (mA)")
+        ax3.legend()
+        ax3.grid(True)
 
-def detect_trend_elbow(data, current):
-    data = np.array(data)
-    current = np.array(current)
-    
-    # Smooth data
-    smoothed = gaussian_filter1d(data, sigma=2)
-    
-    # Compute first and second derivative
-    grad1 = np.gradient(smoothed, current)
-    grad2 = np.gradient(grad1, current)
+        fig_combined.tight_layout()
 
-    pois = []
-    # for i in range(1, len(grad2)):
-    #     if grad2[i] > slope_threshold and all(grad2[i:i+3] > slope_threshold):
-    #         pois.append(i)
+        # Save the channel plot as an SVG file in the output folder
+        svg_filename = base_name + f"_LI_ch{ch_i}.svg"
+        save_path_svg = os.path.join(save_dir, svg_filename)
+        fig_combined.savefig(save_path_svg, format="svg", bbox_inches="tight")
+        print(f"Saved channel {ch_i} plot to {save_path_svg}")
 
-    for i in range(1, len(grad2)):
-        # Only consider if current (in mA) at i is less than 25 (30 to be generous) and greater than 8 
-        if 8 < current[i] < 20:
-            # Calculate average (2nd) gradient before i (all previous points) and after i (all following points)
-            before = grad2[:i]
-            after = grad2[i+1:]
-            before1 = grad1[:i]
-            after1 = grad1[i+1:]
-            integral_before = np.trapz(data[:i], current[:i]) if i > 1 else 0
-            integral_after = np.trapz(data[i:], current[i:]) if i < len(data) - 1 else 0
-            integral = integral_before + integral_after
-            if len(before) > 0 and len(after) > 0:
-                if np.mean(before) < np.mean(after) and np.mean(before1) < np.mean(after1): #and grad1[i] > np.mean(before1) and integral_before/integral <= 0.001:
-                    pois.append(i)
-    return pois
+        # Save the channel plot as an PNG file in the output folder
+        png_filename = base_name + f"_LI_ch{ch_i}.png"
+        save_path_png = os.path.join(save_dir, png_filename)
+        fig_combined.savefig(save_path_png, format="png", bbox_inches="tight")
+        print(f"Saved channel {ch_i} plot to {save_path_png}")
+    else:
 
-def find_elbow_smoothed(data,current, window=7, polyorder=2):
-    """
-    Like find_elbow, but first smooths the data via Savitzky–Golay.
-    window must be odd and >= 3; if data is shorter, it auto‐adjusts.
-    """
+        fig1 = plt.figure(figsize=(8, 6))
+        plt.plot(I, L, marker='o', label='Power (dBm)')
+        if threshold_current_2nd is not None:
+            plt.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+        if threshold_current_1st is not None:
+            plt.axvline(threshold_current_1st, color='blue', linestyle='--', label=f'First Deriv. Max at {threshold_current_1st:.2f} mA')
+        plt.xlabel("Current (mA)")
+        plt.ylabel("Power (dBm)")
+        plt.title("LIV (dBm)")
+        plt.legend()
+        plt.grid(True)
 
-    data = data[:50]
-    arr = np.asarray(data, dtype=float)
-    N = arr.size
-    if N < 2:
-        return None
+        # Plot Power (mW) vs Current with both thresholds
+        L1 = channel
+        fig4 = plt.figure(figsize=(8, 6))
+        plt.plot(I, L1, marker='o', label='Power (mW)')
+        if threshold_current_2nd is not None:
+            plt.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+        if threshold_current_1st is not None:
+            plt.axvline(threshold_current_1st, color='blue', linestyle='--', label=f'First Deriv. Max at {threshold_current_1st:.2f} mA')
+        plt.xlabel("Current (mA)")
+        plt.ylabel("Power (mW)")
+        plt.title("LIV (mW)")
+        plt.legend()
+        plt.grid(True)
 
-    # Adjust window to be at most N (and odd & ≥3)
-    w = min(window, N if N % 2 == 1 else N - 1)
-    if w < 3:
-        w = 3
-    if w % 2 == 0:
-        w += 1
-
-    smooth = savgol_filter(arr, window_length=w, polyorder=polyorder)
-    # from scipy.signal import butter, filtfilt
-    # b, a = butter(N=2, Wn=0.1)  # N=order, Wn=normalized cutoff frequency
-    # smooth = filtfilt(b, a, data)
-    
-    # Then exactly the same logic as before, but on 'smooth'
-    max_delta = -np.inf
-    elbow_idx = []
-    for i in range(N - 1):
-        if 8 < current[i] < 20:
-            delta = smooth[i+1] - smooth[i]
-            if delta > max_delta:
-                max_delta = delta
-                elbow_idx.append(i + 1)
-
-    return elbow_idx
-
-''' Determine true threshold point from many possible points by weighing candidates. Candidates refer to 
-    points common to at least two trend detection methods. Candidates common to three methods are weighed 
-    higher than those common to two, points detected by only one method have no weight (zero).    
-'''
-
-def find_weighted_threshold(gradient, elbow):
-    # Combine all values with source tracking
-    all_points = gradient + elbow
-
-    # Count occurrences
-    count = Counter(all_points)
-
-    # Assign weights: only keep those with count >= 2
-    weighted_points = {pt: count for pt, count in count.items() if count >= 2}
-
-    if not weighted_points:
-        print("No common threshold candidates found.")
-        return None
-
-    # Find point(s) with max weight
-    max_weight = max(weighted_points.values())
-    candidates = [pt for pt, w in weighted_points.items() if w == max_weight]
-
-    # Choose the smallest index among top candidates (or customize selection here)
-    best_point = min(candidates)
-
-    return best_point
-
-def find_threshold(data, current):
-    """
-    Find the threshold point in the data based on gradient and elbow detection.
-    Returns the index of the threshold point.
-    """
-    # Detect trend gradient points
-    gradpts, smoothed = detect_trend_gradient(data, current)
-    print(f"Gradient points detected: {gradpts}")
-    
-    # Detect trend elbow points
-    elbowpts = find_elbow_smoothed(data, current)
-    print(f"Elbow points detected: {elbowpts}")
-
-    # Find weighted threshold point
-    guess = find_weighted_threshold(gradpts, elbowpts)
-    print(f"Weighted threshold guess: {guess}")
-
-    return guess
-
-def smooth_data(data):
-    alpha = 0.2  # Smoothing factor between 0 and 1
-    ema = [data[0]]
-    for d in data[1:]:
-        ema.append(alpha * d + (1 - alpha) * ema[-1])
-    smooth = np.array(ema)
-    return smooth
-
-from scipy.optimize import curve_fit
-
-def piecewise_linear(I, Ith, a, b):
-    """
-    I   : array of currents
-    Ith : threshold current
-    a   : slope above threshold
-    b   : baseline output below threshold
-    """
-    return np.where(I < Ith,
-                    b,
-                    a * (I - Ith) + b)
-
-def fit_guess(I_data, L_data, show=True):
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
-    # initial guesses: 
-    #   Ith ~ the midpoint of your current range,
-    #   a   ~ (max(L)-min(L)) / (max(I)-min(I)),
-    #   b   ~ min(L)
-    p0 = [I_data.mean(), 
-        (L_data.max() - L_data.min())/(I_data.max() - I_data.min()), 
-        L_data.min()]
-
-    # optionally constrain Ith to lie within [min(I), max(I)]
-    bounds = ([I_data.min(),    0,       -np.inf],
-            [I_data.max(),  np.inf,    np.inf])
-
-    popt, pcov = curve_fit(piecewise_linear,
-                        I_data, L_data,
-                        p0=p0, bounds=bounds)
-
-    Ith_fit, a_fit, b_fit = popt
-    print(f"Threshold current Ith = {Ith_fit:.3f} mA")
-    
-    if show:
-        I_fine = np.linspace(I_data.min(), I_data.max(), 200)
-        L_fine = piecewise_linear(I_fine, *popt)
-
-        ax.plot(I_data, L_data,   'o', label="data")
-        ax.plot(I_fine, L_fine,  '-', label="piecewise fit")
-        ax.axvline(Ith_fit, color='k', ls='--', label=f"Ith = {Ith_fit:.3f}")
-        ax.set_xlabel("Current (mA)")
-        ax.set_ylabel("Power")
-        #plt.legend()
-        plt.show()
-        
-    return Ith_fit
+    return threshold_current_2nd
 
 def main():
     print("Starting trend detection...")
@@ -268,12 +230,32 @@ def main():
     #path5 = "C:/Users/OWNER/Desktop/LIV_0604_2/LIV/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16/2025_05_01_19_55_58_LIV_1310nm_Chip27_R5_clad__iter16.mat"
     #path6 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6.mat"
     #path7 = "C:/Users/OWNER/Desktop/smaller_LIV/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25/2025_05_08_20_43_18_LIV_1310nm_ChipC31_R1__iter25.mat"
-    paths = [path0, path1, path2]
+    path8 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_06_07_01_18_LIV_1330nm_ChipD34_R3/2025_04_06_07_01_18_LIV_1330nm_ChipD34_R3.mat"
+    path9 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_01_26_31_LIV_1330nm_ChipD24_R5/2025_04_08_01_26_31_LIV_1330nm_ChipD24_R5.mat"
+    path10 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_03_47_53_LIV_1330nm_ChipD24_R14/2025_04_08_03_47_53_LIV_1330nm_ChipD24_R14.mat"
+    path11 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_06_10_42_01_LIV_1310nm_ChipD22_R10/2025_04_06_10_42_01_LIV_1310nm_ChipD22_R10.mat"
+    path12 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_04_07_19_LIV_1330nm_ChipD24_R7/2025_04_08_04_07_19_LIV_1330nm_ChipD24_R7.mat"
+    path13 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_03_47_53_LIV_1330nm_ChipD24_R14/2025_04_08_03_47_53_LIV_1330nm_ChipD24_R14.mat"
+    path14 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_09_14_55_57_LIV_1550nm_ChipD24_L1/2025_04_09_14_55_57_LIV_1550nm_ChipD24_L1.mat"
+    path15 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_01_47_08_LIV_1330nm_ChipD24_R6/2025_04_08_01_47_08_LIV_1330nm_ChipD24_R6.mat"
+    path16 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_06_04_15_45_LIV_1330nm_ChipD36_R0/2025_04_06_04_15_45_LIV_1330nm_ChipD36_R0.mat"
+    path17 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_09_15_23_03_LIV_1550nm_ChipD24_L0/2025_04_09_15_23_03_LIV_1550nm_ChipD24_L0.mat"
+    path18 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_02_50_38_LIV_1330nm_ChipD24_R10/2025_04_08_02_50_38_LIV_1330nm_ChipD24_R10.mat"
+    path19 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_09_15_23_03_LIV_1550nm_ChipD24_L0/2025_04_09_15_23_03_LIV_1550nm_ChipD24_L0.mat"
+    path20 = "C:/Users/OWNER/Downloads/LIV (2)/LIV/2025_04_08_04_19_12_LIV_1330nm_ChipD24_R4/2025_04_08_04_19_12_LIV_1330nm_ChipD24_R4.mat"
+    
+    IV = True
+    
+
+    paths = [path19,path20,path18]
     for path in paths:
         print(f"Processing file: {path}")
         mat_data = scipy.io.loadmat(path)
 
         current = np.squeeze(mat_data.get("current", np.array([])))
+        voltage = np.squeeze(mat_data.get("voltage", np.array([])))
+
+        #fit_iv(current, voltage)
 
         # Extract specific variables from the MATLAB workspace and save as numpy arrays
         channel_0 = np.squeeze(mat_data.get("channel_0", np.array([]))) if "channel_0" in mat_data else np.array([])
@@ -284,12 +266,12 @@ def main():
         channel_5 = np.squeeze(mat_data.get("channel_5", np.array([]))) if "channel_5" in mat_data else np.array([])
         
         channels = [channel_0, channel_1, channel_2, channel_3, channel_4, channel_5]
-        for i, channel in enumerate(channels):
-            if channel.size == 0 or np.log(channel.mean()) <= -10:
-                print(f"Channel {i} is empty or not found in the file.")
-                channels[i] = None
-                continue
-            print(f"Channel {i} numpy array:", channel)
+        # for i, channel in enumerate(channels):
+        #     # if channel.size == 0 or np.log(channel.mean()) <= -10:
+        #     #     print(f"Channel {i} is empty or not found in the file.")
+        #     #     channels[i] = None
+        #     #     continue
+        #     # print(f"Channel {i} numpy array:", channel)
 
         #print(channel_0)
         for i, channel in enumerate(channels):
@@ -297,7 +279,9 @@ def main():
                 continue
             print(f"Channel {i} Data:")
 
-            thresh_I = fit_guess(current, channel)
+            threshold = run_liv(current, voltage, channel)
+
+            #thresh_I = fit_guess(current, channel)
 
             # smoothed = smooth_data(channel)
             # gradpts = detect_trend_gradient(channel, current)
@@ -324,7 +308,7 @@ def main():
             #     ax.axvline(x=current[guess], color='magenta', label='Weighted Threshold Current', alpha=0.5)
             # else:
             #     print("No common threshold candidates found.")
-    plt.show()
+        plt.show()
 
 if __name__ == '__main__':
     main()
