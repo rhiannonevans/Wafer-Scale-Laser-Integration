@@ -98,11 +98,9 @@ The following plots and characteristic data (for comparison), and a .mat file co
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison_liv.png)<br>
 
 ### FOR WLM COMPARISONS
-"peak_power_current_comparison_liv"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/peak_power_current_comparison_wlm.png)<br>
-"peak_power_current_comparison_filtered_liv"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/peak_power_current_comparison_filtered_wlm.png)<br>
-"threshI_comparison_liv"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison_wlm.png)<br>
+The same as the outputs for LIV Comparisons, with the file names:
+"peak_power_current_comparison_wlm"<br>
+"peak_power_current_comparison_filtered_wlm"<br>
+"threshI_comparison_wlm"<br>
 <!-- "wavelength_power_comparison"<br>
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/wavelength_power_comparison.png) -->
