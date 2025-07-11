@@ -51,12 +51,12 @@ The following plots and characteristic data (for comparison), and a .mat file co
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_04_27_20_04_58_OSA_1310nm_Chip27_R5_clad_WLPeaks.png)<br>
 
 ### For LIV/WLM:
-"filename_LI_channel#" *** # replaced with 1, 2, 3..., one is produced for each channel in the csv <br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_05_29_19_51_09_bothLIVwlm_1330nm_channel4_ChipD30_R0_clad_LI_channel2.png)<br>
-"filename_IVcurve"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/2025_05_06_07_52_37_LIV_1310nm_Chip31_R5__iter6_IVcurve.png)<br>
+"filename_LI_ch#" *** # replaced with 1, 2, 3..., one is produced for each channel in the csv <br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_04_04_18_35_48_LIV_1310nm_ChipC32_R4_LI_ch2.png)<br>
+"filename_derivatives_ch#"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_04_04_18_35_48_LIV_1310nm_ChipC32_R4_derivatives_ch2.png)<br>
 "filename_I_dVdIcurve"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_05_29_19_51_09_bothLIVwlm_1330nm_channel4_ChipD30_R0_clad_I_dVdIcurve.png)<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/2025_04_05_23_28_24_LIV_1310nm_ChipC31_R2_I_dVdIcurve.png)<br>
 
 (The last two are omitted if there is no useful wavelength data in the csv)<br>
 "filename_WL_vs_Current"<br>
@@ -90,12 +90,19 @@ The following plots and characteristic data (for comparison), and a .mat file co
 ![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/1ec14481114dfe28c4617163fcd4c9d644a5fca5/Documentation/singlePT_osa.png)<br>
 
 ### FOR LIV COMPARISONS
-"peak_power_current_comparison"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/2a45a94c490c01f5cdd217cef295cbc9b0bda1d4/Documentation/peak_power_current_comparison.png)<br>
-"threshI_comparison"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison.png)<br>
+"peak_power_current_comparison_liv"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/peak_power_current_comparison_liv.png)<br>
+"peak_power_current_comparison_filtered_liv"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/peak_power_current_comparison_filtered_liv.png)<br>
+"threshI_comparison_liv"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison_liv.png)<br>
 
 ### FOR WLM COMPARISONS
-All LIV Comparisons<br><br>
-"wavelength_power_comparison"<br>
-![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/wavelength_power_comparison.png)
+"peak_power_current_comparison_liv"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/peak_power_current_comparison_wlm.png)<br>
+"peak_power_current_comparison_filtered_liv"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/peak_power_current_comparison_filtered_wlm.png)<br>
+"threshI_comparison_liv"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/threshI_comparison_wlm.png)<br>
+<!-- "wavelength_power_comparison"<br>
+![](https://github.com/rhiannonevans/Wafer-Scale-Laser-Integration/blob/main/Documentation/wavelength_power_comparison.png) -->
