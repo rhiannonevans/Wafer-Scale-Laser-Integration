@@ -22,7 +22,7 @@ import multi_select
 
 def extract_liv(mat_file_path):
     print("LIV Extraction")
-    vars = ['peak_power', 'peak_power_I', 'threshold_ch1']
+    vars = ['peak_power', 'peak_power_I', 'threshold_ch1', 'threshold_ch2', 'threshold_ch3', 'current', 'channel_0', 'channel_1', 'channel_2', 'channel_3', 'channel_4']
     data = read_mat_file(mat_file_path, vars)
     return data
 
@@ -242,6 +242,12 @@ def setup_compdictionaries():
             "threshold_ch1": [],
             "peak_power": [],
             "peak_power_I": [],
+            "current": None,
+            "channel_0": None,
+            "channel_1": None,
+            "channel_2": None,
+            "channel_3": None,
+            "channel_4": None,
         }
     }
     return comp_dict
@@ -310,10 +316,20 @@ def update_liv_dict(comp_dict, data, file_path):
     for key in keys:
             if key in data:
                 val = data[key]
-                # Flatten and cast to float
-                if isinstance(val, (list, tuple)) or val.ndim > 1:
-                    val = val.flatten()[0]
-                comp_dict["liv"][key].append(float(val))
+                if key in ['current', 'channel_0', 'channel_1', 'channel_2', 'channel_3', 'channel_4']:
+                    # Initialize arrays list if not yet created
+                    if comp_dict["liv"][key] is None:
+                        comp_dict["liv"][key] = []
+                    # Store the full array
+                    if isinstance(val, (list, tuple)) or (hasattr(val, 'ndim') and val.ndim > 0):
+                        comp_dict["liv"][key].append(val)
+                    else:
+                        print(f"Warning: '{key}' is not an array in {file_path}")
+                else:
+                    # For other keys, flatten and cast to float as before
+                    if isinstance(val, (list, tuple)) or (hasattr(val, 'ndim') and val.ndim > 1):
+                        val = val.flatten()[0]
+                    comp_dict["liv"][key].append(float(val))
             else:
                 print(f"Warning: '{key}' not found at {file_path}. Skipping this key.")
 

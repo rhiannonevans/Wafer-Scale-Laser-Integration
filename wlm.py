@@ -268,14 +268,22 @@ def process_wlm(file_path_str, output_folder=None):
             
             # Plot all LIV curves (+derivative) and find threshold
             ch_threshold = thresh.run_liv(current, ch, base_name, save_dir, i)
-            #ch_thresholds.append(ch_threshold)
+            ch_thresholds.append(ch_threshold)  # Uncommented this line
             if ch1_idx == i:
                 ch1_threshold = ch_threshold
                 print(f"Channel 1 threshold: {ch1_threshold} mA")
     
     # Save the thresholds to the data dictionary
-    data_dict["threhold_currents"] = ch_thresholds
-    data_dict["threshold_ch1"] = ch1_threshold
+    data_dict["threshold_currents"] = ch_thresholds  # Fixed typo in 'threshold'
+    
+    # Save individual channel thresholds
+    for idx, (i, ch) in enumerate(valid_channels):
+        data_dict[f"threshold_ch{i}"] = ch_thresholds[idx]
+
+    # Save all channel power data in the dictionary
+    for idx, ch in enumerate(channels):
+        if ch is not None:
+            data_dict[f"power_channel_{idx}"] = ch
 
     # Save the data dictionary to a .mat file in the output folder
     mat_filename = base_name + ".mat"
