@@ -20,13 +20,6 @@ import scipy.io
 import threshold as thresh
 from scipy.optimize import curve_fit
 
-def plot_li():
-    """
-    Placeholder function for plotting LI curves.
-    This function is not implemented yet.
-    """
-    print("This function is not implemented yet.")
-    return
 
 def plot_iv(current, voltage, base_name, save_dir):
     """
@@ -51,22 +44,6 @@ def plot_iv(current, voltage, base_name, save_dir):
     fig2.savefig(save_path_png2, format="png", bbox_inches="tight")
     print(f"Saved IV curve png to {save_path_png2}") 
 
-    return
-
-def plot_differential():
-    """
-    Placeholder function for plotting differential resistance curves.
-    This function is not implemented yet.
-    """
-    print("This function is not implemented yet.")
-    return
-
-def find_threshold():
-    """
-    Placeholder function for finding threshold currents.
-    This function is not implemented yet.
-    """
-    print("This function is not implemented yet.")
     return
 
 
@@ -107,15 +84,26 @@ def process_liv(file_path_str, output_folder=None):
         "channel 0": "0",
         "channel 1": "1",
         "channel 2": "2",
-        "channel 3": "3",
-        "channel 4": "4",
-        "channel 5": "5",
-        "channel 6": "6",
-        "channel 7": "7",
-        "channel 8": "8",
-        "channel 9": "9",
-        "channel 10": "10"
+        "channel 3": "3"
     }
+    # # Define search terms for each target row
+    # search_terms = {
+    #     "current": "Current",
+    #     "voltage": "Voltage",
+    #     "temperature": "Temperature",
+    #     "channel 0": "0",
+    #     "channel 1": "1",
+    #     "channel 2": "2",
+    #     "channel 3": "3",
+    #     "channel 4": "4",
+    #     "channel 5": "5",
+    #     "channel 6": "6",
+    #     "channel 7": "7",
+    #     "channel 8": "8",
+    #     "channel 9": "9",
+    #     "channel 10": "10"
+    # }
+
 
     # Find indices where these terms occur
     indices = {}
@@ -157,13 +145,18 @@ def process_liv(file_path_str, output_folder=None):
     ch1 = pd.to_numeric(df.loc[indices["channel 1"]],errors='coerce') if indices["channel 1"] is not None else None
     ch2 = pd.to_numeric(df.loc[indices["channel 2"]],errors='coerce')  if indices["channel 2"] is not None else None
     ch3 = pd.to_numeric(df.loc[indices["channel 3"]],errors='coerce')  if indices["channel 3"] is not None else None
-    ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
-    ch5 = pd.to_numeric(df.loc[indices["channel 5"]],errors='coerce')  if indices["channel 5"] is not None else None
-    ch6 = pd.to_numeric(df.loc[indices["channel 6"]],errors='coerce')  if indices["channel 6"] is not None else None
-    ch7 = pd.to_numeric(df.loc[indices["channel 7"]],errors='coerce')  if indices["channel 7"] is not None else None
-    ch8 = pd.to_numeric(df.loc[indices["channel 8"]],errors='coerce')  if indices["channel 8"] is not None else None
-    ch9 = pd.to_numeric(df.loc[indices["channel 9"]],errors='coerce')  if indices["channel 9"] is not None else None
-    ch10 = pd.to_numeric(df.loc[indices["channel 10"]],errors='coerce')  if indices["channel 10"] is not None else None
+    # ch4 = pd.to_numeric(df.loc[indices["channel 4"]],errors='coerce')  if indices["channel 4"] is not None else None
+    # ch5 = pd.to_numeric(df.loc[indices["channel 5"]],errors='coerce')  if indices["channel 5"] is not None else None
+    # ch6 = pd.to_numeric(df.loc[indices["channel 6"]],errors='coerce')  if indices["channel 6"] is not None else None
+    # ch7 = pd.to_numeric(df.loc[indices["channel 7"]],errors='coerce')  if indices["channel 7"] is not None else None
+    # ch8 = pd.to_numeric(df.loc[indices["channel 8"]],errors='coerce')  if indices["channel 8"] is not None else None
+    # ch9 = pd.to_numeric(df.loc[indices["channel 9"]],errors='coerce')  if indices["channel 9"] is not None else None
+    # ch10 = pd.to_numeric(df.loc[indices["channel 10"]],errors='coerce')  if indices["channel 10"] is not None else None
+
+    ch0_log = np.log(ch0) if ch0 is not None else None
+    ch1_log = np.log(ch1) if ch1 is not None else None
+    ch2_log = np.log(ch2) if ch2 is not None else None
+    ch3_log = np.log(ch3) if ch3 is not None else None
 
     print("Extrated channel (power) data")
 
@@ -173,9 +166,12 @@ def process_liv(file_path_str, output_folder=None):
         ch1_idx = 0
 
     channels = []
-    channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10] if ch is not None]
+    #channels = [ch for ch in [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10] if ch is not None]
+    channels = [ch for ch in [ch0, ch1, ch2, ch3] if ch is not None]
     print("Channels found:", len(channels))
     print(channels)
+
+
 
     # Determine the "data" channel based on the largest average value
     data_channel_index = ch1_idx  # Default to channel 1 if it exists
@@ -225,7 +221,29 @@ def process_liv(file_path_str, output_folder=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    #  # Save all extracted data (search terms) to a CSV
+    # csv_data = {}
+    # for key, idx in indices.items():
+    #     if idx is not None:
+    #         csv_data[key] = df.loc[idx].values
+    #     else:
+    #         csv_data[key] = None
 
+    # # Build DataFrame for CSV (only include non-None)
+    # csv_columns = []
+    # csv_rows = []
+    # for key, values in csv_data.items():
+    #     if values is not None:
+    #         csv_columns.append(key)
+    #         csv_rows.append(values)
+    # if csv_rows:
+    #     csv_out = pd.DataFrame(csv_rows, index=csv_columns).transpose()
+    #     csv_filename = base_name + "_loss_data.csv"
+    #     csv_save_path = os.path.join(save_dir, csv_filename)
+    #     csv_out.to_csv(csv_save_path, index=False)
+    #     print(f"Saved all extracted data to {csv_save_path}")
+    # else:
+    #     print("No valid data found to save to CSV.")
 
     # Dummy noise-check function (replace with your actual noise check if available)
     noise_threshold = 10 ** -30
@@ -255,7 +273,6 @@ def process_liv(file_path_str, output_folder=None):
 
     # PLOT differential resistance (dV/dI vs I)   
     thresh.fit_idvdi(current, voltage, base_name, save_dir)
-
 
 
     #plotting LI curves + finding threshold
@@ -289,13 +306,52 @@ def process_liv(file_path_str, output_folder=None):
         if ch is not None:
             data_dict[f"channel_{idx}"] = ch
 
-    # Finally, save the data dictionary to a .mat file
-    # Save the data dictionary to a .mat file in the output folder
-    mat_filename = base_name + ".mat"
-    save_path_mat = os.path.join(save_dir, mat_filename)
-    scipy.io.savemat(save_path_mat, data_dict)
-    print(f"Data dictionary saved to {save_path_mat}")
-    print(data_dict)
+    # # Finally, save the data dictionary to a .mat file
+    # # Save the data dictionary to a .mat file in the output folder
+    # mat_filename = base_name + ".mat"
+    # save_path_mat = os.path.join(save_dir, mat_filename)
+    # scipy.io.savemat(save_path_mat, data_dict)
+    # print(f"Data dictionary saved to {save_path_mat}")
+    # print(data_dict)
+
+    # Save all extracted data (search terms) to a CSV
+    csv_data = {}
+    for key, idx in indices.items():
+        if idx is not None:
+            csv_data[key] = df.loc[idx].values
+        else:
+            csv_data[key] = None
+            
+    # Build DataFrame for CSV (only include non-None)
+    csv_columns = []
+    csv_rows = []
+    for key, values in csv_data.items():
+        if values is not None:
+            csv_columns.append(key)
+            csv_rows.append(values)
+    if csv_rows:
+        csv_out = pd.DataFrame(csv_rows, index=csv_columns).transpose()
+
+        # add dBm (log) channel data
+        csv_out["channel 0 (dBm)"] = ch0_log if ch0_log is not None else None
+        csv_out["channel 1 (dBm)"] = ch1_log if ch1_log is not None else None
+        csv_out["channel 2 (dBm)"] = ch2_log if ch2_log is not None else None
+        csv_out["channel 3 (dBm)"] = ch3_log if ch3_log is not None else None
+
+        # Add peak_power and related variables as new columns to the DataFrame
+        csv_out["peak_power"] = data_dict.get("peak_power", None)
+        csv_out["peak_power_I"] = data_dict.get("peak_power_I", None)
+        csv_out["peak_power_V"] = data_dict.get("peak_power_V", None)
+        csv_out["threshold_currents"] = str(data_dict.get("threshold_currents", None))
+        csv_out["threshold_ch1"] = ch1_threshold
+        csv_filename = base_name + "_loss_data.csv"
+        csv_save_path = os.path.join(save_dir, csv_filename)
+        csv_out.to_csv(csv_save_path, index=False)
+        print(f"Saved all extracted data to {csv_save_path}")
+    else:
+        print("No valid data found to save to CSV.")
+
+    plt.close('all')  # Close all plots to free up memory
 
 
 def main():

@@ -1,134 +1,314 @@
 import os
-import tkinter as tk
-from tkinter import filedialog, simpledialog
-import scipy.io
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import numpy as np
+import pandas as pd
+from pathlib import Path
 
+from WLMclass import WLMclass
 
-def ask_selection_mode():
-    root = tk.Tk()
-    root.withdraw()
-    return simpledialog.askstring("Selection Mode", "Enter 'multi' to select multiple folders or 'parent' to select a parent folder:")
+""" Class for processing multiple Wavelength Meter (WLM) files. Processes selected 'wlm' files, creates the following comparison plots:
+         - LI, VI, and TI curves for all devices (channel 1 - although this is changeable)
+         - Threshold currents for each IDtag
+         - Power at specified currents (default: 25mA and 50mA)
+         - Wavelength vs Current for all devices
+"""
 
+class multi_WLM:
+    def __init__(self, parent_path, selected_files=None, overwrite_existing=False):
+        p = Path(parent_path)
+        self.parent_path = parent_path
+        self.cmap = plt.get_cmap('inferno')
 
-def select_multiple_folders():
-    root = tk.Tk()
-    root.withdraw()
-    folder_paths = []
-    while True:
-        folder = filedialog.askdirectory(title="Select Folder (Cancel to finish)")
-        if folder:
-            folder_paths.append(folder)
+        selected_files = self.filter_wlm(selected_files) if selected_files else None
+
+        if not selected_files:
+            # auto‑scan for every CSV under parent_path (including subfolders)
+            self.selected_files = [
+                fp
+                for fp in p.rglob('*.csv')
+                if fp.is_file()
+                and 'loss' not in fp.name.lower()
+                and 'wlm'  in fp.name.lower()
+            ]
         else:
-            break
-    return folder_paths
+            # assume selected_files is a list of basenames WITHOUT path, e.g.
+            # ["2025_04_04_17_10_53_OSA_1330nm_ChipC32_R1", ...]
+            wanted = {name.lower() for name in selected_files}
 
+            # still recurse via rglob, but only keep those whose stem is in wanted
+            self.selected_files = [
+                fp
+                for fp in p.rglob('*.csv')
+                if fp.is_file() and fp.stem.lower() in wanted
+            ]
 
-def select_parent_folder():
-    root = tk.Tk()
-    root.withdraw()
-    return filedialog.askdirectory(title="Select Parent Folder")
-
-
-def gather_mat_data(folder_paths):
-    data = []
-    for folder_path in folder_paths:
-        for root_dir, _, files in os.walk(folder_path):
-            for file in files:
-                if file.endswith('.mat'):
-                    file_path = os.path.join(root_dir, file)
-                    mat_data = scipy.io.loadmat(file_path)
-                    data.append((mat_data, file, root_dir))
-    return data
-
-
-def plot_data(data):
-    colormap = cm.get_cmap('inferno')
-
-    def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title):
-        plt.figure()
-        num_files = len(data)
-        for i, (mat_data, filename, folder) in enumerate(data):
-            if x_key in mat_data and y_key in mat_data:
-                x_data = mat_data[x_key].flatten()
-                y_data = mat_data[y_key].flatten()
-
-                # # Normalize the y-axis data
-                # if np.max(y_data) != 0:
-                #     y_data = y_data / np.max(y_data)
-
-                color = colormap(0.2 + 0.6 * (i / max(num_files - 1, 1)))  # Avoid the lightest colors
-
-                # Extract label after "LIV_", fallback to filename without extension
-                if "wlm_" in filename:
-                    label = filename.split("wlm_")[-1].replace('.mat', '')
-                else:
-                    label = os.path.splitext(filename)[0]  # Use filename without extension
-
-                plt.plot(x_data, y_data, color=color, label=label)
-            else:
-                print(f"{filename} missing '{x_key}' or '{y_key}'")
-
-        # Set axis labels with larger font size
-        plt.xlabel(x_label, fontsize=16)
-        plt.ylabel(y_label, fontsize=16)
-
-        # Set title with larger font size
-        plt.title(title, fontsize=14)
-
-        # Adjust tick label font size
-        plt.tick_params(axis='both', which='major', labelsize=14)
-
-        # Add legend
-       # plt.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize='small', borderaxespad=0) 
-        plt.legend(loc='upper left', fontsize=13, borderaxespad=0)
-
-        # Add grid and adjust layout
-        plt.grid(True)
-        plt.subplots_adjust(right=0.75)
-
-        # Prompt user for file name to save the plots
-        root = tk.Tk()
-        root.withdraw()
-        save_title = simpledialog.askstring("Save Plot", "Enter the file name to save the plot (without extension):")
-        if not save_title:
-            print("No file name provided. Plot will not be saved.")
+        if not self.selected_files:
+            print("No WLM files found!")
             return
+        
+        self.save_dir = p / "WLM_Comparison"
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
 
-        # Save the plot in the specified folder
-        if data:
-            save_folder = r"C:\Users\jsheri1\Documents\A_Research\2024-02_Wafer-Scale\20250403_Shuksan_ANT_Light2025_WaferscaleMeasurements\Plots"
-            os.makedirs(save_folder, exist_ok=True)
-            save_path = os.path.join(save_folder, f"{save_title}.png")
-            plt.savefig(save_path, bbox_inches='tight')
-            print(f"Plot saved to {save_path}")
+        self.overwrite_existing = overwrite_existing
 
-        # Show the plot
-        plt.show()
+        # 2) Process each base CSV into a loss_data CSV, then load it
+        self.loss_data = {}
+        for csv_fp in self.selected_files:
+            print(f"→ Processing base file: {csv_fp.name}")
 
-    # # Plot Current vs Normalized Power
-    # plot_line(data, 'current', 'channel2', 'Current (mA)', 'Normalized Power',
-    #           "LI Curves-Ybranches - Current vs Normalized Power for Oband", "Normalized LI - Oband")
+            # sanitize_data should write out a file like "foo_loss_data.csv"
+            # and return its path (as a str or Path)
+
+            loss_path = csv_fp.with_name(csv_fp.stem + '_loss_data.csv')
+            if self.overwrite_existing or not loss_path.exists():
+                try:
+                    wlm_instance = WLMclass(csv_fp, output_folder=csv_fp.parent)
+                except Exception as e:
+                    print(f"Error processing {csv_fp}: {e}")
+                    continue
+            else:
+                print(f"Loss data already exists: {loss_path}. Skipping processing.")
+
+            # read it back in
+            df = pd.read_csv(loss_path)
+            idtag = self.get_IDtag(csv_fp.name)
+
+            self.loss_data[idtag] = df
+            print(f"   ✓ loaded loss_data for {idtag}  ({len(df)} rows)")
+        #self.check_data()
+        plt.close('all')  # Close any existing plots
+        self.plot_wl_v_I()
+        self.compPlots()
+        self.plot_thresholds()
+        self.plot_power_at_current(currents=[0.025, 0.050])  # 25mA and 50mA
+        #plt.show()
+
+    def filter_wlm(self, selected_files = []):
+        filtered = []
+        for f in selected_files:
+            # get just the filename portion
+            name = os.path.basename(f)
+            if 'wlm' in name.lower():
+                filtered.append(f)
+        return filtered
     
-        ##Plot Current vs Power
-    plot_scatter(data, 'current', 'wavelength', 'Current (mA)', 'Wavelength (nm)',
-             "LI Curves-DelayLines - Current vs Power for Oband", "LI - Oband-DelayLines") #for delaylines choose channel2
+    def check_data(self):
+        """Prints out the loaded IDtags and first few rows of each DataFrame."""
+        print("All IDtags loaded:", list(self.loss_data.keys()))
+        # To inspect the first few rows of each DataFrame in the dictionary:
+        for idtag, df in self.loss_data.items():
+            print(f"First rows for {idtag}:")
+            print(df.head())
 
+    def get_IDtag(self, filename: str) -> str:
+        base = Path(filename).stem
+        if "Chip" in base:
+            return base[base.index("Chip"):]
+        else:
+            return "Unknown_ID"
+        
 
+    def compPlots(self):
+        """Generates comparison plots for LI, VI, and TI curves."""
+        
+        LIfig, LIax = plt.subplots(figsize=(8, 6))
+        VIfig, VIax = plt.subplots(figsize=(8, 6))
+        TIfig, TIax = plt.subplots(figsize=(8, 6))
+
+        # grab all IDtags and assign each a color
+        idtags = list(self.loss_data.keys())
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        # plot each device’s Current vs Channel 1 on the same plot
+        for color, idtag in zip(colors, idtags):
+            df = self.loss_data[idtag]
+            #thresh[idtag] = df['threshold_ch1'].values[0] 
+            # assume your loss_data DataFrame has columns 'current' and 'channel 1'
+            LIax.plot(
+                df['current'],
+                df['channel 1'],
+                label=idtag,
+                color=color
+            )
+            VIax.plot(
+                df['current'],
+                df['voltage'],
+                label=idtag,
+                color=color
+            )
+            TIax.plot(
+                df['temperature'],
+                df['voltage'],
+                label=idtag,
+                color=color
+            )
+
+        LIax.set_xlabel('Current')
+        LIax.set_ylabel('Channel 1')
+        LIax.set_title('Channel 1 vs Current for all devices')
+        LIax.legend(title='ID Tag')
+        LIfig.tight_layout()
+
+        VIax.set_xlabel('Current')
+        VIax.set_ylabel('Voltage')
+        VIax.set_title('Voltage vs Current for all devices')
+        VIax.legend(title='ID Tag')
+        VIfig.tight_layout()
+
+        TIax.set_xlabel('Current')
+        TIax.set_ylabel('Temperature')
+        TIax.set_title('Temperature vs Current for all devices')
+        TIax.legend(title='ID Tag')
+        TIfig.tight_layout()
+
+        #save the figures
+        LIfig.savefig(Path(self.save_dir) / 'LI_comparison.png')
+        VIfig.savefig(Path(self.save_dir) / 'VI_comparison.png')
+        TIfig.savefig(Path(self.save_dir) / 'TI_comparison.png')
+        print("Comparison plots successfully saved as LI_comparison.png, VI_comparison.png, and TI_comparison.png")
+        return 
+    
+    def plot_thresholds(self):
+        """Generates a boxplot of threshold currents for each IDtag."""
+
+        # grab all IDtags and assign each a color
+        idtags = list(self.loss_data.keys())
+        #colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        threshold_lists = [self.loss_data[id]['threshold_ch1'].values
+                    for id in idtags]
+
+        stats = []
+        for arr in threshold_lists:
+            arr = np.asarray(arr)
+            m   = arr.mean()
+            σ   = arr.std()
+            stats.append({
+                'med':    np.median(arr),
+                'q1':     np.percentile(arr, 25),
+                'q3':     np.percentile(arr, 75),
+                'whislo': m - σ,
+                'whishi': m + σ,
+                'fliers': [],
+                'mean':   m
+            })
+
+        # Plot
+        Threshfig, Threshax = plt.subplots(figsize=(8,6))
+        Threshax.bxp(
+            stats,
+            showmeans=True,
+            meanprops=dict(marker='D', markerfacecolor='orange', markeredgecolor='black')
+        )
+
+        # Now set the x‑axis ticks and labels
+        positions = np.arange(1, len(idtags) + 1)
+        Threshax.set_xticks(positions)
+        Threshax.set_xticklabels(idtags, rotation=45, ha='right')
+
+        Threshax.set_xlabel('Chip ID')
+        Threshax.set_ylabel('Threshold Current (mA)')
+        Threshax.set_title('Threshold Currents\n(box = IQR, whiskers = ±1σ, ♦ = mean)')
+        Threshfig.tight_layout()
+
+        # Save the plot
+        Threshfig.savefig(Path(self.save_dir) / 'Thresholds_comparison.png')
+        print("Thresholds comparison plot saved as Thresholds_comparison.png")
+        return
+    
+    def plot_power_at_current(self, currents=[0.025, 0.050]):
+        """
+        currents in A, e.g. [0.025, 0.050]. - looking at 25mA and 50mA
+        Assumes self.loss_data[idtag]['current'] is in A.
+        """
+
+        idtags = list(self.loss_data.keys())
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        Powerfig, Powerax = plt.subplots(figsize=(8, 6))
+
+        for color, idtag in zip(colors, idtags):
+            df = self.loss_data[idtag]
+
+            # convert to floats
+            cur_A = df['current'].astype(float)
+            cur_mA = cur_A * 1000               # now in mA
+            power = df['channel 1'].astype(float)
+
+            first_point = True
+            for target in currents:
+                # find any row within 0.1 mA of target
+                mask = np.isclose(cur_mA, target, atol=0.1)
+                if mask.any():
+                    p = power[mask].iloc[0]
+                    Powerax.scatter(
+                        target,
+                        p,
+                        color=color,
+                        label=idtag if first_point else None,
+                        edgecolor='k'
+                    )
+                    first_point = False
+                    #print(f"{idtag}: found I={target} mA → P={p:.3f}")
+                else:
+                    print(f"{idtag}: no I≈{target} mA (available: {np.round(cur_mA.unique(),3)[:5]} …)")
+
+        Powerax.set_xlabel('Current (mA)')
+        Powerax.set_ylabel('Power (mW)')
+        Powerax.set_title('Power at Specified Currents for all devices')
+        Powerax.legend(title='ID Tag')
+        Powerfig.tight_layout()
+
+        out_path = Path(self.save_dir) / 'Power_at_current.png'
+        Powerfig.savefig(out_path)
+        print(f"Saved plot to {out_path}")
+        return
+    
+    def plot_wl_v_I(self):
+        """
+        currents in A, e.g. [0.025, 0.050]. - looking at 25mA and 50mA
+        Assumes self.loss_data[idtag]['current'] is in A.
+        """
+
+        idtags = list(self.loss_data.keys())
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        WIfig, WIax = plt.subplots(figsize=(8, 6))
+
+        for color, idtag in zip(colors, idtags):
+            df = self.loss_data[idtag]
+
+            # convert to floats
+            cur_A = df['current'].astype(float)
+            cur_mA = cur_A * 1000               # now in mA
+            wl = df['wavelength'].astype(float)
+
+            WIax.plot(
+                cur_mA,
+                wl,
+                color=color,
+                label=idtag
+            )
+
+        WIax.set_xlabel('Current (mA)')
+        WIax.set_ylabel('Wavelength (nm)')
+        WIax.set_title('Wavelength vs Current for all devices')
+        WIax.legend(title='ID Tag')
+        WIfig.tight_layout()
+        #plt.show()
+
+        out_path = Path(self.save_dir) / 'Wavelength_vs_Current.png'
+        WIfig.savefig(out_path)
+        print(f"Saved plot to {out_path}")
+        return
+
+        
+        
+    
 if __name__ == "__main__":
-    mode = ask_selection_mode()
-    if mode == 'multi':
-        folders = select_multiple_folders()
-    elif mode == 'parent':
-        parent_folder = select_parent_folder()
-        folders = [parent_folder] if parent_folder else []
-    else:
-        folders = []
+    parent_path = r"C:\Users\OWNER\Desktop\LIV_0604\LIV"
+    multi = multi_WLM(parent_path, overwrite_existing=False)
+    plt.show()  # Show all plots at once
 
-    if folders:
-        data = gather_mat_data(folders)
-        plot_data(data)
-    else:
-        print("No valid folders selected.")
+    

@@ -13,16 +13,17 @@ from tkinter import (
 )
 from tkinter.filedialog import askdirectory
 
-def scrape_filenames(root):
+def scrape_filenames(root, parent_folder=None):
     root.withdraw()
 
-    folder_path = askdirectory(title="Select a Folder Containing the CSV Files")
-    if not folder_path:
+    if not parent_folder:
+        parent_folder = askdirectory(title="Select a Folder Containing the CSV Files")
+    if not parent_folder:
         print("No folder selected. Exiting.")
         return
 
-    subfolder_names = [name for name in os.listdir(folder_path)
-                       if os.path.isdir(os.path.join(folder_path, name))]
+    subfolder_names = [name for name in os.listdir(parent_folder)
+                       if os.path.isdir(os.path.join(parent_folder, name))]
 
     selected_names = []
 
@@ -95,10 +96,12 @@ def scrape_filenames(root):
     Button(button_frame, text="Submit", command=on_submit).pack(side="left", padx=5)
 
     root.wait_window(selection_window)
-    return selected_names, folder_path
+    #selected_names = [name + ".csv" for name in selected_names]
+    print(f"Selected: {selected_names}")
+    return selected_names
 
 if __name__ == "__main__":
     root = Tk()
-    selections, parent_folder = scrape_filenames(root)
+    parent_folder = r"C:\Users\OWNER\Desktop\LIV_0604\LIV"
+    selections = scrape_filenames(root, parent_folder)
     print("User selected:", selections)
-    print("Parent folder:", parent_folder)

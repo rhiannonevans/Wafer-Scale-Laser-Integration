@@ -10,9 +10,9 @@
     [Author: Rhiannon H Evans]
 """
 
-import osa
-import liv  
-import wlm
+import Obsolete.osa as osa
+import Obsolete.liv as liv  
+import Obsolete.wlm as wlm
 import os
 from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename

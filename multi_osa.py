@@ -1,143 +1,186 @@
-import os
-import tkinter as tk
-from tkinter import filedialog, simpledialog
-import scipy.io
+
+from OSAclass import OSAclass
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+import pandas as pd
+from pathlib import Path
+import io
+import numpy as np
+import os
 
-def ask_selection_mode():
-    root = tk.Tk()
-    root.withdraw()
-    return simpledialog.askstring("Selection Mode", "Enter 'multi' to select multiple folders or 'parent' to select a parent folder:")
+""" Class for processing multiple OSA (Optical Spectrum Analyzer) files. Processes selected 'osa' files, creates the following comparison plots:
+         - Peak Power vs Current for all devices
+         - Wavelength at peak power vs Current for all devices
+"""
 
-def select_multiple_folders():
-    root = tk.Tk()
-    root.withdraw()
-    folder_paths = []
-    while True:
-        folder = filedialog.askdirectory(title="Select Folder (Cancel to finish)")
-        if folder:
-            folder_paths.append(folder)
+class multi_OSA:
+    def __init__(self, parent_path, selected_files=None, overwrite_existing=False):
+        p = Path(parent_path)
+        self.parent_path = parent_path
+        self.cmap = plt.get_cmap('inferno')
+        
+
+        selected_files = self.filter_osa(selected_files) if selected_files else None
+
+        if not selected_files:
+            # auto‑scan for every CSV under parent_path (including subfolders)
+            self.selected_files = [
+                fp
+                for fp in p.rglob('*.csv')
+                if fp.is_file()
+                and 'loss' not in fp.name.lower()
+                and 'osa'  in fp.name.lower()
+            ]
         else:
-            break
-    return folder_paths
+            # assume selected_files is a list of basenames WITHOUT path, e.g.
+            # ["2025_04_04_17_10_53_OSA_1330nm_ChipC32_R1", ...]
+            wanted = {name.lower() for name in selected_files}
 
-def select_parent_folder():
-    root = tk.Tk()
-    root.withdraw()
-    return filedialog.askdirectory(title="Select Parent Folder")
+            # still recurse via rglob, but only keep those whose stem is in wanted
+            self.selected_files = [
+                fp
+                for fp in p.rglob('*.csv')
+                if fp.is_file() and fp.stem.lower() in wanted
+            ]
 
-def gather_mat_data(folder_paths):
-    data = []
-    for folder_path in folder_paths:
-        for root_dir, _, files in os.walk(folder_path):
-            for file in files:
-                if file.endswith('.mat'):
-                    file_path = os.path.join(root_dir, file)
-                    mat_data = scipy.io.loadmat(file_path)
-                    data.append((mat_data, file))
-    return data
+    
+        if not self.selected_files:
+            print("No OSA files found!")
+            return
 
-def plot_scatter(data, x_key, y_key, x_label, y_label, title, save_title):
-        
-        colormap = cm.get_cmap('inferno')
-        plt.figure()
-        num_files = len(data)
-        for i, (mat_data, filename) in enumerate(data):
-            if x_key in mat_data and y_key in mat_data:
-                x_data = mat_data[x_key].flatten()
-                y_data = mat_data[y_key].flatten()
-                color = colormap(0.2 + 0.6 * (i / max(num_files - 1, 1)))  # Avoid the lightest colors
+        self.save_dir = p / "OSA_Comparison"
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+            
+        self.overwrite_existing = overwrite_existing
 
-                # Extract label after "OSA_", fallback to filename without extension
-                if "OSA_" in filename:
-                    label = filename.split("OSA_")[-1].replace('.mat', '')
-                else:
-                    label = os.path.splitext(filename)[0]  # Use filename without extension
-                
-                plt.scatter(x_data, y_data, color=color, label=label)
+        # 2) Process each base CSV into a loss_data CSV, then load it
+        self.loss_data = {}
+        self.metadata = {}
+        for csv_fp in self.selected_files:
+            print(f"→ Processing base file: {csv_fp.name}")
+
+            # sanitize_data should write out a file like "foo_loss_data.csv"
+            # and return its path (as a str or Path)
+
+            loss_path = csv_fp.with_name(csv_fp.stem + '_loss_data.csv')
+            if self.overwrite_existing or not loss_path.exists():
+                try:
+                    osa_instance = OSAclass(csv_fp)
+                except Exception as e:
+                    print(f"Error processing {csv_fp}: {e}")
+                    continue
             else:
-                print(f"{filename} missing '{x_key}' or '{y_key}'")
+                print(f"Loss data already exists: {loss_path}. Skipping processing.")
+                # read data from previously processed csv
+            
+            meta, df = self.read_data(loss_path)
 
-        plt.xlabel(x_label)
-        plt.ylabel(y_label)
-        plt.title(title)
-        plt.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize='small', borderaxespad=0)
-        plt.grid(True)
-        plt.subplots_adjust(right=0.75)
+            idtag = self.get_IDtag(csv_fp.name)
 
-        # Save the plot
-        plot_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")], title=f"Save {save_title} Plot")
-        if plot_path:
-            plt.savefig(plot_path, bbox_inches='tight')
-        plt.show()  # Show the plot after saving
+            self.loss_data[idtag] = df
+            self.metadata[idtag] = meta
+            print(f"   ✓ loaded loss_data for {idtag}  ({len(df)} rows)")
+
+        plt.close('all')  # Close all plots to free up memory
+        self.plot_peak_pow_v_I()
+        self.plot_peak_wl_v_I()
+
+    def filter_osa(self, selected_files = []):
+        filtered = []
+        for f in selected_files:
+            # get just the filename portion
+            name = os.path.basename(f)
+            if 'osa' in name.lower():
+                filtered.append(f)
+        return filtered
         
+    def read_data(self, data_file):
+        # 1) Read all lines
+        with open(data_file, 'r') as f:
+            lines = f.readlines()
+
+        # read metadata
+        meta = {}
+        for line in lines:
+            if not line.startswith("#"):
+                break
+            key, val_str = line[1:].split(":", 1)
+            val_str = val_str.strip()
+
+            if val_str.startswith("[") and val_str.endswith("]"):
+                # strip brackets and parse space‐sep floats
+                arr = np.fromstring(val_str.strip("[]"), sep=" ")
+                meta[key.strip()] = arr
+            else:
+                # scalar float
+                meta[key.strip()] = float(val_str)
+
+        # 3) Load the actual table
+        data_io = io.StringIO("".join(l for l in lines if not l.startswith("#")))
+        df = pd.read_csv(data_io, index_col=0)
+        return meta, df
+
+    def check_data(self):
+        """Prints out the loaded IDtags and first few rows of each DataFrame."""
+        print("All IDtags loaded:", list(self.loss_data.keys()))
+        # To inspect the first few rows of each DataFrame in the dictionary:
+        for idtag, df in self.loss_data.items():
+            print(f"Metadata for {idtag}:")
+            print(self.metadata[idtag])
+            print(f"First rows for {idtag}:")
+            print(df.head())
+        print(self.loss_data.items())
+
+    def get_IDtag(self, filename: str) -> str:
+        base = Path(filename).stem
+        if "Chip" in base:
+            return base[base.index("Chip"):]
+        else:
+            return "Unknown_ID"
+        
+    def plot_peak_pow_v_I(self):
+        
+        """Plots the peak power vs current for each IDtag."""
+
+        idtags = list(self.loss_data.keys())
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        plt.figure(figsize=(10, 6))
+        for idtag, df in self.loss_data.items():
+            plt.plot(df['Current (mA)'], df['Peak Power (dBm)'], label=idtag, color=colors[idtags.index(idtag)])
 
 
-def plot_data(data, newVer = False, parent_path = None):
-    
-    # Plot Current vs Peak Wavelength
-    plot_scatter(data, 'current_mA', 'peak_wavelength', 'Current (mA)', 'Peak Wavelength (nm)', 
-                "Overlay Plot of Current vs Peak Wavelength", "Current vs Peak Wavelength")
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Power (dBm)')
+        plt.title('Peak Power vs Current')
+        plt.legend()
+        plt.grid()
+        plt.savefig(Path(self.save_dir) / 'Peak_Power_vs_Current.png', bbox_inches='tight')
 
-    # Plot Current vs Peak Power
-    plot_scatter(data, 'current_mA', 'peak_power', 'Current (mA)', 'Peak Power (mW)', 
-                "Overlay Plot of Current vs Peak Power", "Current vs Peak Power")
+    def plot_peak_wl_v_I(self):
 
-    # Plot Current vs Peak Power (Single Point per File)
-    def plot_single_point(data, x_key, y_key, x_label, y_label, title, save_title):
-        plt.figure()
-        x_values = []
-        y_values = []
-        labels = []
+        """Plots the wavelength at peak power vs current for each IDtag."""
 
-        for mat_data, filename in data:
-            if x_key in mat_data and y_key in mat_data:
-                x_data = mat_data[x_key].flatten()
-                y_data = mat_data[y_key].flatten()
-                if len(x_data) > 0 and len(y_data) > 0:
-                    x_values.append(x_data[0])  # Take the first data point
-                    y_values.append(y_data[0])  # Take the first data point
-                    if "OSA_" in filename:
-                        labels.append(filename.split("OSA_")[-1].replace('.mat', ''))
-                    else:
-                        labels.append(os.path.splitext(filename)[0])  # Use filename without extension
+        idtags = list(self.loss_data.keys())
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
 
-        plt.scatter(x_values, y_values, color='blue', label='Data Points')
-        for i, label in enumerate(labels):
-            plt.annotate(label, (x_values[i], y_values[i]), fontsize=8, alpha=0.7)
+        plt.figure(figsize=(10, 6))
+        for idtag, df in self.loss_data.items():
+            plt.plot(df['Current (mA)'], df['Peak Wavelength (nm)'], label=idtag, color=colors[idtags.index(idtag)])
 
-        plt.xlabel(x_label)
-        plt.ylabel(y_label)
-        plt.title(title)
-        plt.grid(True)
 
-        # Save the plot
-        plot_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")], title=f"Save {save_title} Plot")
-        if newVer:
-            plot_path1 = os.path.join(os.path.dirname(parent_path), f"compPlot1.png")
-            plot_path2 = os.path.join(os.path.dirname(parent_path), f"compPlot2.png")
-        elif plot_path:
-            plt.savefig(plot_path, bbox_inches='tight')
-            plt.show()  # Show the plot after saving
-
-    plot_single_point(data, 'current_mA', 'peak_power', 'Current (mA)', 'Peak Power (mW)', 
-                      "Single Point Plot of Current vs Peak Power", "Single Point Current vs Peak Power")
-    
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Wavelength (nm)')
+        plt.title('Peak Wavelength vs Current')
+        plt.legend()
+        plt.grid()
+        plt.savefig(Path(self.save_dir) / 'Peak_Wavelength_vs_Current.png', bbox_inches='tight')
 
 
 if __name__ == "__main__":
-    mode = ask_selection_mode()
-    if mode == 'multi':
-        folders = select_multiple_folders()
-    elif mode == 'parent':
-        parent_folder = select_parent_folder()
-        folders = [parent_folder] if parent_folder else []
-    else:
-        folders = []
+    parent_path = r"C:\Users\OWNER\Desktop\osa_data"
+    multi = multi_OSA(parent_path, overwrite_existing=False)
 
-    if folders:
-        data = gather_mat_data(folders)
-        plot_data(data)
-    else:
-        print("No valid folders selected.")
+    plt.show()

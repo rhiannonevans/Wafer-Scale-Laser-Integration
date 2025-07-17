@@ -1,10 +1,10 @@
-import process_csv
+import Obsolete.process_csv as process_csv
 import os
 from tkinter import Tk, simpledialog
 from tkinter.filedialog import askdirectory, askopenfilename
 import multi_select
-import process_csv
-import extract
+import Obsolete.process_csv as process_csv
+import Obsolete.extract as extract
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import time
@@ -19,7 +19,12 @@ import time
     or current vs peak power and threshold current for LIV/WLM data. The plots will be saved in the parent folder as PNG and SVG files.
 
     [Author: Rhiannon H Evans]
+
+
 """
+
+## @TODO: 
+# - prompt user to select comparison BEFORE processing files, then save accordingly as one goes
 
 def plot_scatter(data1, data2, x_label, y_label, title, save_title, parent_path = None, remove_outliers=True, outlier_threshold=-70):
         ## Filters out data for which max power is below a certain threshold (default -70 dBm)

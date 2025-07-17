@@ -15,7 +15,7 @@ def process_wlm(file_path_str, output_folder=None):
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     import scipy.io
-    import liv
+    import Obsolete.liv as liv
     import re
     import threshold
 
