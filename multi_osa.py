@@ -363,7 +363,7 @@ class multi_OSA:
             return
             
         # Create bar plot with skyblue color
-        bars = plt.bar(device_names, power_values, color='skyblue', alpha=0.8, edgecolor='black', linewidth=1)
+        bars = plt.bar(device_names, power_values, color='skyblue', alpha=0.8, linewidth=1)
         
         # Add value labels on top of bars
         for bar, value in zip(bars, power_values):
@@ -413,7 +413,7 @@ class multi_OSA:
             return
             
         # Create bar plot with lightcoral color
-        bars = plt.bar(device_names, power_values, color='lightcoral', alpha=0.8, edgecolor='black', linewidth=1)
+        bars = plt.bar(device_names, power_values, color='lightcoral', alpha=0.8, linewidth=1)
         
         # Add value labels on top of bars
         for bar, value in zip(bars, power_values):
