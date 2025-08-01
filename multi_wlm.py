@@ -7,10 +7,8 @@ from pathlib import Path
 from WLMclass import WLMclass
 
 """ Class for processing multiple Wavelength Meter (WLM) files. Processes selected 'wlm' files, creates the following comparison plots:
-         - LI, VI, and TI curves for all devices (channel 1 - although this is changeable)
-         - Threshold currents for each IDtag
-         - Power at specified currents (default: 25mA and 50mA)
-         - Wavelength vs Current for all devices
+         - Current vs Wavelength for all devices
+         - Voltage vs Current for all devices
 """
 
 class multi_WLM:
@@ -108,11 +106,12 @@ class multi_WLM:
         else:
             return "Unknown_ID"
         
-
-    def compPlots(self):
-        """Generates comparison plots for LI, VI, and TI curves."""
+    def plot_voltage_vs_current(self):
+        """Plot voltage vs current for all devices"""
         
-        LIfig, LIax = plt.subplots(figsize=(8, 6))
+        idtags = list(self.loss_data.keys())
+        colors = self.cmap(np.linspace(0.2, 0.9, len(idtags)))  # Use visible range of inferno
+
         VIfig, VIax = plt.subplots(figsize=(8, 6))
         TIfig, TIax = plt.subplots(figsize=(8, 6))
 
@@ -230,11 +229,24 @@ class multi_WLM:
 
         for color, idtag in zip(colors, idtags):
             df = self.loss_data[idtag]
-
-            # convert to floats
+            
+            # Convert current to mA and filter for >= 25mA
             cur_A = df['current'].astype(float)
             cur_mA = cur_A * 1000               # now in mA
-            power = df['channel 1'].astype(float)
+            voltage = df['voltage'].astype(float)
+            
+            # Filter for current >= 25mA
+            mask = cur_mA >= 25.0
+            filtered_current = cur_mA[mask]
+            filtered_voltage = voltage[mask]
+            
+            VIax.plot(
+                filtered_current,
+                filtered_voltage,
+                label=idtag,
+                color=color,
+                linewidth=2
+            )
 
             first_point = True
             for target in currents:
@@ -253,26 +265,24 @@ class multi_WLM:
                     #print(f"{idtag}: found I={target} mA → P={p:.3f}")
                 else:
                     print(f"{idtag}: no I≈{target} mA (available: {np.round(cur_mA.unique(),3)} …)")
+        VIax.set_xlabel('Current (mA)')
+        VIax.set_ylabel('Voltage (V)')
+        VIax.set_title('Voltage vs Current for all devices')
+        VIax.legend(title='ID Tag')
+        VIax.grid(True, alpha=0.3)
+        VIax.set_xlim(left=25)  # Start x-axis from 25mA
+        VIfig.tight_layout()
 
-        Powerax.set_xlabel('Current (mA)')
-        Powerax.set_ylabel('Power (mW)')
-        Powerax.set_title('Power at Specified Currents for all devices')
-        Powerax.legend(title='ID Tag')
-        Powerfig.tight_layout()
-
-        out_path = Path(self.save_dir) / 'Power_at_current.png'
-        Powerfig.savefig(out_path)
+        out_path = Path(self.save_dir) / 'Voltage_vs_Current.png'
+        VIfig.savefig(out_path)
         print(f"Saved plot to {out_path}")
         return
-    
+        
     def plot_wl_v_I(self):
-        """
-        currents in A, e.g. [0.025, 0.050]. - looking at 25mA and 50mA
-        Assumes self.loss_data[idtag]['current'] is in A.
-        """
-
+        """Plot wavelength vs current for all devices"""
+        
         idtags = list(self.loss_data.keys())
-        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+        colors = self.cmap(np.linspace(0.2, 0.9, len(idtags)))  # Use visible range of inferno
 
         WIfig, WIax = plt.subplots(figsize=(8, 6))
 
@@ -280,24 +290,31 @@ class multi_WLM:
             df = self.loss_data[idtag]
             print(df.columns)
 
-            # convert to floats
+            # Convert current to mA and filter for >= 25mA
             cur_A = df['current'].astype(float)
             cur_mA = cur_A * 1000               # now in mA
             wl = df['wavelength'].astype(float)
+            
+            # Filter for current >= 25mA
+            mask = cur_mA >= 25.0
+            filtered_current = cur_mA[mask]
+            filtered_wavelength = wl[mask]
 
             WIax.plot(
-                cur_mA,
-                wl,
+                filtered_current,
+                filtered_wavelength,
                 color=color,
-                label=idtag
+                label=idtag,
+                linewidth=2
             )
 
         WIax.set_xlabel('Current (mA)')
         WIax.set_ylabel('Wavelength (nm)')
         WIax.set_title('Wavelength vs Current for all devices')
         WIax.legend(title='ID Tag')
+        WIax.grid(True, alpha=0.3)
+        WIax.set_xlim(left=25)  # Start x-axis from 25mA
         WIfig.tight_layout()
-        #plt.show()
 
         out_path = Path(self.save_dir) / 'Wavelength_vs_Current.png'
         WIfig.savefig(out_path)
@@ -305,11 +322,7 @@ class multi_WLM:
         return
 
         
-        
-    
 if __name__ == "__main__":
     parent_path = r"C:\Users\OWNER\Desktop\LIV_0604\LIV"
     multi = multi_WLM(parent_path, overwrite_existing=False)
     plt.show()  # Show all plots at once
-
-    

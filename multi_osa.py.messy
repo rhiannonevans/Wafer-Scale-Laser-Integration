@@ -1,0 +1,703 @@
+import os
+import io
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import scipy.io
+from OSAclass import OSAclass
+
+""" Class for processing multiple OSA (Optical Spectrum Analyzer) files. Processes selected 'osa' files, creates the following comparison plots:
+         - Peak Power vs Current for all devices
+         - Peak Wavelength vs Current for all devices
+         - Peak Wavelength vs Current with 2nd Order Polynomial Fits
+"""
+
+class multi_OSA:
+    def __init__(self, parent_path, selected_files=None, overwrite_existing=False):
+        p = Path(parent_path)
+        self.parent_path = parent_path
+        self.cmap = plt.get_cmap('inferno')
+        self.idtag_to_mat_file = {}  # Store mapping of IDtag to mat file path
+        
+        # Log selected files for debugging
+        print("Debug: Selected files:", selected_files)
+        
+        # Filter selected files to only include OSA files
+        selected_files = self.filter_osa(selected_files) if selected_files else None
+        
+        if not selected_files:
+            # Auto-scan for every OSA CSV under parent_path (including subfolders)
+            all_files = [
+                fp
+                for fp in p.rglob('*.csv')
+                if fp.is_file()
+            ]
+            print("Debug: All files found by rglob:", [str(fp) for fp in all_files])
+            
+            # Filter for raw OSA files (excluding loss_data files)
+            raw_files = [
+                fp
+                for fp in all_files
+                if 'loss' not in fp.name.lower() and 'osa' in fp.name.lower()
+            ]
+        else:
+            # Use the selected files to find matching CSV files
+            wanted = {Path(name).stem.lower() for name in selected_files}
+            
+            all_files = [
+                fp
+                for fp in p.rglob('*.csv')
+                if fp.is_file()
+            ]
+            
+            # Find CSVs that match selected files and are OSA files
+            raw_files = [
+                fp
+                for fp in all_files
+                if fp.stem.lower() in wanted and 'osa' in fp.name.lower()
+            ]
+            print("Debug: Selected OSA raw files:", [str(fp) for fp in raw_files])
+
+        self.raw_files = raw_files
+        print(f"Found {len(raw_files)} raw files to process")
+
+        # STEP 3: Process raw files with OSAclass if overwrite_existing is True
+        if overwrite_existing:
+            print("Overwrite flag is set, processing raw OSA files...")
+            # Process raw files with OSAclass
+            for raw_file in raw_files:
+                print(f"Processing {raw_file}")
+                osa = OSAclass(str(raw_file))
+                # The OSAclass will save outputs in the same directory as the raw file
+        else:
+            print("Skipping raw file processing (use overwrite_existing=True to reprocess)")
+            
+        # STEP 4: Find all the processed .mat files for comparison plots
+        mat_files = []
+        # First check if each raw file has a corresponding .mat file
+        for raw_file in raw_files:
+            # Look for a .mat file in the same directory with the same name but ending in _new.mat
+            mat_name = raw_file.stem + "_new.mat"
+            mat_path = raw_file.parent / mat_name
+            if mat_path.exists():
+                mat_files.append(mat_path)
+            else:
+                print(f"Warning: No matching .mat file found for {raw_file}")
+
+        # If no .mat files were found corresponding to raw files, do a broader search
+        if not mat_files:
+            print("No direct matches found, searching for all _new.mat files...")
+            # Search for all _new.mat files under parent_path
+            mat_files = [
+                fp for fp in p.rglob("*_new.mat") if fp.is_file()
+            ]
+
+        if not mat_files:
+            print("No OSA .mat file found with _new.mat suffix!")
+            return
+
+        # Store the processed mat files
+        self.mat_files = mat_files
+        print(f"Found {len(mat_files)} processed .mat files")
+        
+        # Create output directory for comparison plots
+        self.save_dir = Path(parent_path) / "OSA_Comparison"
+        os.makedirs(self.save_dir, exist_ok=True)
+        
+        # Build a dictionary mapping IDtags to mat files for faster lookup
+        self.build_idtag_mapping()
+        
+        # STEP 5: Create comparison plots
+        self.create_comparison_plots()
+        
+    def build_idtag_mapping(self):
+        """Build a dictionary mapping IDtags to mat files for faster lookup"""
+        self.idtag_to_mat_file = {}
+        
+        for mat_file in self.mat_files:
+            try:
+                data = scipy.io.loadmat(str(mat_file))
+                if 'IDtag' in data:
+                    idtag = str(data['IDtag'][0])
+                    self.idtag_to_mat_file[idtag] = mat_file
+                else:
+                    print(f"Warning: No IDtag found in {mat_file}")
+            except Exception as e:
+                print(f"Error reading {mat_file}: {e}")
+                
+    def filter_osa(self, selected_files):
+        """Filter selected files to only include OSA files"""
+        if not selected_files:
+            return None
+            
+        # Only keep files that have "OSA" in their name
+        filtered = []
+        for fname in selected_files:
+            if 'osa' in Path(fname).name.lower():
+                filtered.append(fname)
+            else:
+                print(f"Skipping non-OSA file: {fname}")
+                
+        return filtered
+        
+    def create_comparison_plots(self):
+        """Create all comparison plots"""
+        print(f"\n--- Generating comparison plots in: {self.save_dir} ---")
+        
+        # Load data from all mat files
+        device_data = {}
+        
+        for mat_file in self.mat_files:
+            try:
+                # Load the mat file
+                data = scipy.io.loadmat(str(mat_file))
+                
+                # Extract IDtag
+                if 'IDtag' in data:
+                    idtag = str(data['IDtag'][0])
+                else:
+                    print(f"Warning: No IDtag found in {mat_file}, skipping")
+                    continue
+                    
+                # Extract current, peak power and wavelength data
+                if all(key in data for key in ['I', 'peakPower', 'peakWL']):
+                    i_values = data['I'].flatten()
+                    peak_power = data['peakPower'].flatten()
+                    peak_wl = data['peakWL'].flatten()
+                    
+                    # Store data in a dictionary
+                    device_data[idtag] = {
+                        'current': i_values,
+                        'peak_power': peak_power,
+                        'peak_wl': peak_wl,
+                        'file_path': mat_file
+                    }
+                    print(f"Loaded data for {idtag} ({len(i_values)} points)")
+                else:
+                    print(f"Warning: Missing required data in {mat_file}, skipping")
+            except Exception as e:
+                print(f"Error loading {mat_file}: {e}")
+                
+        # Generate comparison plots
+        self.plot_peak_power_vs_current(device_data)
+        self.plot_peak_wl_vs_current(device_data)
+        self.plot_peak_wl_vs_current_with_fit(device_data)
+        
+    def plot_peak_power_vs_current(self, device_data):
+        """Plot peak power vs current for all devices"""
+        plt.figure(figsize=(10, 6))
+        
+        # Create color cycle for different devices
+        num_devices = len(device_data)
+        colors = [self.cmap(i/max(1, num_devices-1)) for i in range(num_devices)]
+        
+        for i, (idtag, data) in enumerate(device_data.items()):
+            plt.plot(data['current'], data['peak_power'], 'o-', 
+                    label=f"{idtag}", color=colors[i], markersize=4)
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Power (dBm)')
+        plt.title('Peak Power vs Current')
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best')
+        
+        # Save the plot
+        save_path = self.save_dir / "OSA_comparison_peak_power.png"
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+        print(f"Saved peak power vs current plot to {save_path}")
+        
+    def plot_peak_wl_vs_current(self, device_data):
+        """Plot peak wavelength vs current for all devices"""
+        plt.figure(figsize=(10, 6))
+        
+        # Create color cycle for different devices
+        num_devices = len(device_data)
+        colors = [self.cmap(i/max(1, num_devices-1)) for i in range(num_devices)]
+        
+        for i, (idtag, data) in enumerate(device_data.items()):
+            plt.plot(data['current'], data['peak_wl'], 'o-', 
+                    label=f"{idtag}", color=colors[i], markersize=4)
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Wavelength (nm)')
+        plt.title('Peak Wavelength vs Current')
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best')
+        
+        # Save the plot
+        save_path = self.save_dir / "OSA_comparison_peak_wl.png"
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+        print(f"Saved peak wavelength vs current plot to {save_path}")
+
+        # STEP 3: Process raw files if overwrite_existing is True
+        # This ensures individual plots are saved in the raw data folders
+        if overwrite_existing and raw_files:
+            print(f"Processing {len(raw_files)} raw OSA files...")
+            for raw_file in raw_files:
+                try:
+                    # Save outputs in the same folder as the input CSV file
+                    output_folder = raw_file.parent
+                    print(f"Processing raw file: {raw_file}")
+                    print(f"Saving individual outputs to: {output_folder}")
+                    OSAclass(raw_file, output_folder=str(output_folder))
+                except Exception as e:
+                    print(f"Error processing raw file {raw_file}: {e}")
+        
+        # STEP 4: Look for processed .mat files based on the selection criteria
+        if not selected_files:
+            # This section is no longer used - removed redundant code
+        
+    def plot_peak_power_vs_current(self, device_data):
+        """Plot peak power vs current for all devices"""
+        plt.figure(figsize=(10, 6))
+        
+        # Create color cycle for different devices
+        num_devices = len(device_data)
+        colors = [self.cmap(i/max(1, num_devices-1)) for i in range(num_devices)]
+        
+        for i, (idtag, data) in enumerate(device_data.items()):
+            plt.plot(data['current'], data['peak_power'], 'o-', 
+                    label=f"{idtag}", color=colors[i], markersize=4)
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Power (dBm)')
+        plt.title('Peak Power vs Current')
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best')
+        
+        # Save the plot
+        save_path = self.save_dir / "OSA_comparison_peak_power.png"
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+        print(f"Saved peak power vs current plot to {save_path}")
+        
+    def plot_peak_wl_vs_current(self, device_data):
+        """Plot peak wavelength vs current for all devices"""
+        plt.figure(figsize=(10, 6))
+        
+        # Create color cycle for different devices
+        num_devices = len(device_data)
+        colors = [self.cmap(i/max(1, num_devices-1)) for i in range(num_devices)]
+        
+        for i, (idtag, data) in enumerate(device_data.items()):
+            plt.plot(data['current'], data['peak_wl'], 'o-', 
+                    label=f"{idtag}", color=colors[i], markersize=4)
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Wavelength (nm)')
+        plt.title('Peak Wavelength vs Current')
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best')
+        
+        # Save the plot
+        save_path = self.save_dir / "OSA_comparison_peak_wl.png"
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+        print(f"Saved peak wavelength vs current plot to {save_path}")
+        
+        plt.close('all')  # Close any existing plots
+        
+        # Generate comparison plots
+        self.plot_peak_pow_v_I()
+        self.plot_peak_wl_v_I()
+        self.plot_peak_wl_v_I_with_fit()
+        
+        print(f"All comparison plots saved to: {self.save_dir}")
+
+    def filter_osa(self, selected_files = None):
+        if not selected_files:
+            return None
+            
+        filtered = []
+        for f in selected_files:
+            # Get just the filename portion
+            name = os.path.basename(f)
+            if 'osa' in name.lower():
+                filtered.append(f)
+        return filtered
+        
+    def read_data(self, data_file):
+        # 1) Read all lines
+        with open(data_file, 'r') as f:
+            lines = f.readlines()
+
+        # read metadata
+        meta = {}
+        for line in lines:
+            if not line.startswith("#"):
+                break
+            key, val_str = line[1:].split(":", 1)
+            val_str = val_str.strip()
+
+            if val_str.startswith("[") and val_str.endswith("]"):
+                # strip brackets and parse space‐sep floats
+                arr = np.fromstring(val_str.strip("[]"), sep=" ")
+                meta[key.strip()] = arr
+            else:
+                # scalar float
+                meta[key.strip()] = float(val_str)
+
+        # 3) Load the actual table
+        data_io = io.StringIO("".join(l for l in lines if not l.startswith("#")))
+        df = pd.read_csv(data_io, index_col=0)
+        return meta, df
+
+    def read_mat_data(self, mat_file):
+        """Reads data from a .mat file and extracts metadata and DataFrame."""
+        mat_data = scipy.io.loadmat(mat_file)
+
+        # Debugging: Print available keys in the .mat file
+        print(f"Keys in {mat_file}: {list(mat_data.keys())}")
+
+        # Create metadata from available data in mat file
+        meta = {}
+        
+        # Extract the required data for DataFrame
+        current_mA = mat_data.get('current_mA', [])
+        peak_power = mat_data.get('peak_power', [])
+        peak_wavelength = mat_data.get('peak_wavelength', [])
+        temperature_C = mat_data.get('temperature_C', [])
+        
+        # If the arrays are nested, extract the first level
+        if isinstance(current_mA, np.ndarray) and current_mA.size > 0 and isinstance(current_mA[0], np.ndarray):
+            current_mA = current_mA[0]
+        if isinstance(peak_power, np.ndarray) and peak_power.size > 0 and isinstance(peak_power[0], np.ndarray):
+            peak_power = peak_power[0]
+        if isinstance(peak_wavelength, np.ndarray) and peak_wavelength.size > 0 and isinstance(peak_wavelength[0], np.ndarray):
+            peak_wavelength = peak_wavelength[0]
+        if isinstance(temperature_C, np.ndarray) and temperature_C.size > 0 and isinstance(temperature_C[0], np.ndarray):
+            temperature_C = temperature_C[0]
+        
+        # Create DataFrame
+        data_dict = {
+            'Current (mA)': current_mA,
+            'Peak Power (dBm)': peak_power,
+            'Peak Wavelength (nm)': peak_wavelength
+        }
+        
+        if len(temperature_C) > 0:
+            data_dict['Temperature (C)'] = temperature_C
+            
+        # Create DataFrame
+        try:
+            df = pd.DataFrame(data_dict)
+        except Exception as e:
+            raise ValueError(f"Error converting data to DataFrame in {mat_file}: {e}")
+
+        return meta, df
+
+    def validate_data(self, df, file_fp):
+        """Validates the DataFrame to ensure it contains required columns and is not empty."""
+        required_columns = ['Current (mA)', 'Peak Power (dBm)', 'Peak Wavelength (nm)']
+        if df.empty:
+            raise ValueError(f"DataFrame is empty for file: {file_fp}")
+            
+        # Check if columns exist
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            print(f"Warning: Missing columns {missing_columns} in file: {file_fp}")
+            print(f"Available columns: {df.columns}")
+            # Create missing columns with NaN values to prevent errors
+            for col in missing_columns:
+                df[col] = np.nan
+                
+        # Ensure all data is properly formatted
+        for col in df.columns:
+            if isinstance(df[col].iloc[0], np.ndarray):
+                # Convert array values to scalar
+                df[col] = df[col].apply(lambda x: x[0] if isinstance(x, np.ndarray) and len(x) > 0 else x)
+
+    def get_IDtag(self, filename: str) -> str:
+        base = Path(filename).stem
+        # Remove the _new suffix if present
+        if base.endswith("_new"):
+            base = base[:-4]
+        
+        if "Chip" in base:
+            return base[base.index("Chip"):]
+        else:
+            # Try to extract date and chip info from filename format like 2025_04_06_07_51_07_OSA_1310nm_ChipD22_R0_clad
+            parts = base.split('_')
+            for i, part in enumerate(parts):
+                if "Chip" in part and i+1 < len(parts):
+                    return f"{part}_{parts[i+1]}"
+            return "Unknown_ID"
+        
+    def plot_peak_pow_v_I(self):
+        
+        """Plots the peak power vs current for each IDtag."""
+
+        idtags = list(self.device_data.keys())
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        plt.figure(figsize=(10, 6))
+        for idtag, df in self.device_data.items():
+            plt.plot(df['Current (mA)'], df['Peak Power (dBm)'], label=idtag, color=colors[idtags.index(idtag)])
+
+
+        
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Power (dBm)')
+        plt.title('Peak Power vs Current')
+        plt.legend()
+        plt.grid()
+        plt.savefig(Path(self.save_dir) / 'Peak_Power_vs_Current.png', bbox_inches='tight')
+
+    def plot_peak_wl_v_I(self):
+
+        """Plots the wavelength at peak power vs current for each IDtag."""
+
+        idtags = list(self.device_data.keys())
+        if not idtags:
+            print("No data available for plotting Peak Wavelength vs Current.")
+            return
+
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+
+        plt.figure(figsize=(10, 6))
+        for idtag, df in self.device_data.items():
+            if 'Current (mA)' in df.columns and 'Peak Wavelength (nm)' in df.columns:
+                plt.plot(df['Current (mA)'], df['Peak Wavelength (nm)'], label=idtag, color=colors[idtags.index(idtag)])
+
+        plt.xlabel('Current (mA)')
+        plt.ylabel('Peak Wavelength (nm)')
+        plt.title('Peak Wavelength vs Current')
+        if idtags:
+            plt.legend()
+        plt.grid()
+        plt.savefig(Path(self.save_dir) / 'Peak_Wavelength_vs_Current.png', bbox_inches='tight')
+        
+    def plot_peak_wl_v_I_with_fit(self):
+        """Plots the wavelength at peak power vs current for each IDtag with 2nd order polynomial fit."""
+
+        idtags = list(self.device_data.keys())
+        if not idtags:
+            print("No data available for plotting Peak Wavelength vs Current with fit.")
+            return
+
+        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+        
+        # Create individual plots for each device with fit
+        print(f"Generating individual 2nd order fit plots for {len(idtags)} devices...")
+        
+        for i, idtag in enumerate(idtags):
+            df = self.device_data[idtag]
+            
+            if 'Current (mA)' not in df.columns or 'Peak Wavelength (nm)' not in df.columns:
+                print(f"Missing required columns for {idtag}, skipping fit plot.")
+                continue
+                
+            # Create figure for this device
+            plt.figure(figsize=(10, 6))
+            
+            # Plot original data points
+            plt.plot(df['Current (mA)'], df['Peak Wavelength (nm)'], 'o', label='Data', color=colors[i])
+            
+            # Get the data in the range of 25mA to 50mA
+            mask = (df['Current (mA)'] >= 25) & (df['Current (mA)'] <= 50)
+            x_fit = df.loc[mask, 'Current (mA)']
+            y_fit = df.loc[mask, 'Peak Wavelength (nm)']
+            
+            if len(x_fit) < 3:
+                print(f"Not enough data points between 25mA and 50mA for {idtag}, using all data instead.")
+                x_fit = df['Current (mA)']
+                y_fit = df['Peak Wavelength (nm)']
+            
+            # Try to get coefficients from mat file first
+            try:
+                # Find the .mat file for this idtag
+                file_path = None
+                for fp in self.selected_files:
+                    if idtag in self.get_IDtag(fp.name):
+                        file_path = fp
+                        break
+                
+                if file_path:
+                    # Read the .mat file to get coefficients
+                    mat_data = scipy.io.loadmat(file_path)
+                    
+                    # Check for 2nd degree polynomial coefficients
+                    if 'polyfit_peakWL_vs_I_deg2_coeffs' in mat_data:
+                        poly_coeffs = mat_data['polyfit_peakWL_vs_I_deg2_coeffs'].flatten()
+                        print(f"Found 2nd order fit coefficients in .mat file for {idtag}: {poly_coeffs}")
+                        
+                        # Generate smooth fit curve using the coefficients
+                        x_smooth = np.linspace(25, 50, 100)
+                        y_smooth = np.polyval(poly_coeffs, x_smooth)
+                        
+                        # Plot the fit curve
+                        plt.plot(x_smooth, y_smooth, '-', label='2nd Order Fit', color='red')
+                        
+                        # Add equation to the plot
+                        eq_text = f"y = {poly_coeffs[0]:.3e}x² + {poly_coeffs[1]:.3e}x + {poly_coeffs[2]:.3f}"
+                        plt.text(0.05, 0.95, eq_text, transform=plt.gca().transAxes, fontsize=9,
+                                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.6))
+                    else:
+                        print(f"No 2nd order fit coefficients found in .mat file for {idtag}, calculating new fit.")
+                        # Calculate new fit if not found in .mat
+                        poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                        x_smooth = np.linspace(25, 50, 100)
+                        y_smooth = np.polyval(poly_coeffs, x_smooth)
+                        plt.plot(x_smooth, y_smooth, '-', label='2nd Order Fit', color='red')
+                        
+                        # Add equation to the plot
+                        eq_text = f"y = {poly_coeffs[0]:.3e}x² + {poly_coeffs[1]:.3e}x + {poly_coeffs[2]:.3f}"
+                        plt.text(0.05, 0.95, eq_text, transform=plt.gca().transAxes, fontsize=9,
+                                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.6))
+                else:
+                    raise ValueError(f"Could not find .mat file for {idtag}")
+                    
+            except Exception as e:
+                print(f"Error getting fit from .mat for {idtag}: {e}")
+                # Calculate new fit if there was an error
+                poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                x_smooth = np.linspace(25, 50, 100)
+                y_smooth = np.polyval(poly_coeffs, x_smooth)
+                plt.plot(x_smooth, y_smooth, '-', label='2nd Order Fit', color='red')
+                
+                # Add equation to the plot
+                eq_text = f"y = {poly_coeffs[0]:.3e}x² + {poly_coeffs[1]:.3e}x + {poly_coeffs[2]:.3f}"
+                plt.text(0.05, 0.95, eq_text, transform=plt.gca().transAxes, fontsize=9,
+                        verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.6))
+            
+            plt.xlabel('Current (mA)', fontsize=14)
+            plt.ylabel('Peak Wavelength (nm)', fontsize=14)
+            plt.title(f'Peak Wavelength vs Current with 2nd Order Fit - {idtag}', fontsize=16)
+            plt.legend(fontsize=12)
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig(Path(self.save_dir) / f'Peak_Wavelength_vs_Current_Fit_{idtag}.png', bbox_inches='tight')
+            plt.close()
+            
+        # Create a summary plot with all fits
+        print("Generating summary plot with all 2nd order fits...")
+        plt.figure(figsize=(12, 8))
+        
+        for i, idtag in enumerate(idtags):
+            df = self.device_data[idtag]
+            
+            if 'Current (mA)' not in df.columns or 'Peak Wavelength (nm)' not in df.columns:
+                continue
+                
+            color = colors[i]
+                
+            # Get the data in the range of 25mA to 50mA
+            mask = (df['Current (mA)'] >= 25) & (df['Current (mA)'] <= 50)
+            x_fit = df.loc[mask, 'Current (mA)']
+            y_fit = df.loc[mask, 'Peak Wavelength (nm)']
+            
+            if len(x_fit) < 3:
+                x_fit = df['Current (mA)']
+                y_fit = df['Peak Wavelength (nm)']
+            
+            # Try to get coefficients from mat file
+            try:
+                file_path = None
+                for fp in self.selected_files:
+                    if idtag in self.get_IDtag(fp.name):
+                        file_path = fp
+                        break
+                
+                if file_path:
+                    mat_data = scipy.io.loadmat(file_path)
+                    
+                    if 'polyfit_peakWL_vs_I_deg2_coeffs' in mat_data:
+                        poly_coeffs = mat_data['polyfit_peakWL_vs_I_deg2_coeffs'].flatten()
+                        x_smooth = np.linspace(25, 50, 100)
+                        y_smooth = np.polyval(poly_coeffs, x_smooth)
+                        # Plot only the fit line, not the points to keep the plot clean
+                        plt.plot(x_smooth, y_smooth, '-', label=f'{idtag}', color=color)
+                    else:
+                        # If coefficients not in .mat file, calculate them
+                        poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                        x_smooth = np.linspace(25, 50, 100)
+                        y_smooth = np.polyval(poly_coeffs, x_smooth)
+                        plt.plot(x_smooth, y_smooth, '-', label=f'{idtag}', color=color)
+            except Exception as e:
+                # Fall back to calculating coefficients
+                poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                x_smooth = np.linspace(25, 50, 100)
+                y_smooth = np.polyval(poly_coeffs, x_smooth)
+                plt.plot(x_smooth, y_smooth, '-', label=f'{idtag}', color=color)
+        
+        plt.xlabel('Current (mA)', fontsize=14)
+        plt.ylabel('Peak Wavelength (nm)', fontsize=14)
+        plt.title('Peak Wavelength vs Current with 2nd Order Fits - All Devices', fontsize=16)
+        plt.legend(fontsize=10)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(Path(self.save_dir) / 'Peak_Wavelength_vs_Current_All_Fits.png', bbox_inches='tight')
+        
+        # Create a second summary plot that includes data points
+        print("Generating summary plot with data points and 2nd order fits...")
+        plt.figure(figsize=(12, 8))
+        
+        for i, idtag in enumerate(idtags):
+            df = self.device_data[idtag]
+            
+            if 'Current (mA)' not in df.columns or 'Peak Wavelength (nm)' not in df.columns:
+                continue
+                
+            color = colors[i]
+                
+            # Get the data in the range of 25mA to 50mA
+            mask = (df['Current (mA)'] >= 25) & (df['Current (mA)'] <= 50)
+            x_fit = df.loc[mask, 'Current (mA)']
+            y_fit = df.loc[mask, 'Peak Wavelength (nm)']
+            
+            if len(x_fit) < 3:
+                x_fit = df['Current (mA)']
+                y_fit = df['Peak Wavelength (nm)']
+            
+            # Plot data points and fit line
+            plt.plot(x_fit, y_fit, 'o', color=color, markersize=4)
+            
+            try:
+                file_path = None
+                for fp in self.selected_files:
+                    if idtag in self.get_IDtag(fp.name):
+                        file_path = fp
+                        break
+                
+                if file_path:
+                    mat_data = scipy.io.loadmat(file_path)
+                    
+                    if 'polyfit_peakWL_vs_I_deg2_coeffs' in mat_data:
+                        poly_coeffs = mat_data['polyfit_peakWL_vs_I_deg2_coeffs'].flatten()
+                    else:
+                        poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                else:
+                    poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                    
+                x_smooth = np.linspace(25, 50, 100)
+                y_smooth = np.polyval(poly_coeffs, x_smooth)
+                plt.plot(x_smooth, y_smooth, '-', label=f'{idtag}', color=color)
+                
+            except Exception as e:
+                poly_coeffs = np.polyfit(x_fit, y_fit, 2)
+                x_smooth = np.linspace(25, 50, 100)
+                y_smooth = np.polyval(poly_coeffs, x_smooth)
+                plt.plot(x_smooth, y_smooth, '-', label=f'{idtag}', color=color)
+        
+        plt.xlabel('Current (mA)', fontsize=14)
+        plt.ylabel('Peak Wavelength (nm)', fontsize=14)
+        plt.title('Peak Wavelength vs Current with Data Points and 2nd Order Fits', fontsize=16)
+        plt.legend(fontsize=10)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(Path(self.save_dir) / 'Peak_Wavelength_vs_Current_All_Fits_with_Points.png', bbox_inches='tight')
+
+
+if __name__ == "__main__":
+    # Update to use the path from the terminal output
+    parent_path = r"C:\Users\jsheri1\Desktop\20250403_Shuksan_ANT_Light2025_WaferscaleMeasurements\OSA\Oband_DelayLines"
+    multi = multi_OSA(parent_path, overwrite_existing=True)
+
+    plt.show()
