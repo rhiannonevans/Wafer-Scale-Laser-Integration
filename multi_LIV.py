@@ -140,9 +140,15 @@ class multi_LIV:
     def get_IDtag(self, filename: str) -> str:
         base = Path(filename).stem
         # Expanded regex to handle more variations, including '_clad' and other suffixes
-        match = re.search(r"Chip\w+_R\d+(_clad)?", base)
-        if match:
-            id_tag = match.group(0)  # Retain '_clad' if present
+        matchR = re.search(r"Chip\w+_R\d+(_clad)?", base)
+        matchL = re.search(r"Chip\w+_L\d+(_clad)?", base)
+        matchD = re.search(r"Chip\w+_D\d+(_clad)?", base)
+        if matchR:
+            id_tag = matchR.group(0)  # Retain '_clad' if present
+        elif matchL:
+            id_tag = matchL.group(0)  # Retain '_clad' if present
+        elif matchD:
+            id_tag = matchD.group(0)  # Retain '_clad' if present
         else:
             id_tag = "Unknown_ID"
 
@@ -252,19 +258,20 @@ class multi_LIV:
         print("Thresholds comparison plot saved as Thresholds_comparison.png")
         return
 
-    def plot_power_at_current(self, currents=[25, 50]):
+    def plot_power_at_current(self, allowance= 0.5):
 
-        Generates two separate bar plots for power at 25mA and 50mA for each chip ID.
+        # Generates two separate bar plots for power at 25mA and 50mA for each chip ID. Allowance is the tolerance for current matching (i.e. 24.5 ~ 25.5 for 25mA).
+        idtags = list(self.loss_data.keys())
         power_25mA = []
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
             power = df['channel 2'].astype(float) #Ensure to use the correct channel
-            mask = np.isclose(cur_mA, 25, atol=0.1)
+            mask = np.isclose(cur_mA, 25, atol=allowance)
             if mask.any():
                 power_25mA.append(power[mask].iloc[0])
             else:
-                power_25mA.append(None)
+                power_25mA.append(np.nan)
 
         fig_25, ax_25 = plt.subplots(figsize=(8, 6))
         ax_25.bar(idtags, power_25mA, color='skyblue')
@@ -284,12 +291,12 @@ class multi_LIV:
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
-            power = df['channel 2'].astype(float) #Ensure to use the correct channel
-            mask = np.isclose(cur_mA, 50, atol=0.1)
+            power = df['channel 1'].astype(float) #Ensure to use the correct channel
+            mask = np.isclose(cur_mA, 50, atol=allowance)
             if mask.any():
                 power_50mA.append(power[mask].iloc[0])
             else:
-                power_50mA.append(None)
+                power_50mA.append(np.nan)
 
         fig_50, ax_50 = plt.subplots(figsize=(8, 6))
         ax_50.bar(idtags, power_50mA, color='lightcoral')
@@ -308,12 +315,12 @@ class multi_LIV:
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
-            power_dBm = df['channel 2 (dBm)'].astype(float)  # 
-            mask = np.isclose(cur_mA, 25, atol=0.1)
+            power_dBm = df['channel 2 (dBm)'].astype(float)  #
+            mask = np.isclose(cur_mA, 25, atol=allowance)
             if mask.any():
                 power_25mA_dBm.append(power_dBm[mask].iloc[0])
             else:
-                power_25mA_dBm.append(None)
+                power_25mA_dBm.append(np.nan)
 
         fig_25_dBm, ax_25_dBm = plt.subplots(figsize=(8, 6))
         ax_25_dBm.bar(idtags, power_25mA_dBm, color='skyblue')
@@ -333,11 +340,11 @@ class multi_LIV:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
             power_dBm = df['channel 2 (dBm)'].astype(float)  # Assuming channel 2 contains dBm values
-            mask = np.isclose(cur_mA, 50, atol=0.1)
+            mask = np.isclose(cur_mA, 50, atol=allowance)
             if mask.any():
                 power_50mA_dBm.append(power_dBm[mask].iloc[0])
             else:
-                power_50mA_dBm.append(None)
+                power_50mA_dBm.append(np.nan)
 
         fig_50_dBm, ax_50_dBm = plt.subplots(figsize=(8, 6))
         ax_50_dBm.bar(idtags, power_50mA_dBm, color='lightcoral')

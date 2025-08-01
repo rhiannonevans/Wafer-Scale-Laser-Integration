@@ -440,9 +440,15 @@ class multi_OSA:
         if base.endswith('_new'):
             base = base[:-4]
         # Expanded regex to handle more variations, including '_clad' and other suffixes
-        match = re.search(r"Chip\w+_R\d+(_clad)?", base)
-        if match:
-            id_tag = match.group(0)  # Retain '_clad' if present
+        matchR = re.search(r"Chip\w+_R\d+(_clad)?", base)
+        matchL = re.search(r"Chip\w+_L\d+(_clad)?", base)
+        matchD = re.search(r"Chip\w+_D\d+(_clad)?", base)
+        if matchR:
+            id_tag = matchR.group(0)  # Retain '_clad' if present
+        elif matchL:
+            id_tag = matchL.group(0)  # Retain '_clad' if present
+        elif matchD:
+            id_tag = matchD.group(0)  # Retain '_clad' if present
         else:
             id_tag = "Unknown_ID"
 

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import re
 
 from WLMclass import WLMclass
 
@@ -101,10 +102,19 @@ class multi_WLM:
 
     def get_IDtag(self, filename: str) -> str:
         base = Path(filename).stem
-        if "Chip" in base:
-            return base[base.index("Chip"):]
+        matchR = re.search(r"Chip\w+_R\d+(_clad)?", base)
+        matchL = re.search(r"Chip\w+_L\d+(_clad)?", base)
+        matchD = re.search(r"Chip\w+_D\d+(_clad)?", base)
+        if matchR:
+            id_tag = matchR.group(0)  # Retain '_clad' if present
+        elif matchL:
+            id_tag = matchL.group(0)  # Retain '_clad' if present
+        elif matchD:
+            id_tag = matchD.group(0)  # Retain '_clad' if present
         else:
-            return "Unknown_ID"
+            id_tag = "Unknown_ID"
+
+        return id_tag
         
     def plot_voltage_vs_current(self):
         """Plot voltage vs current for all devices"""
@@ -114,6 +124,7 @@ class multi_WLM:
 
         VIfig, VIax = plt.subplots(figsize=(8, 6))
         TIfig, TIax = plt.subplots(figsize=(8, 6))
+        LIfig, LIax = plt.subplots(figsize=(8, 6))
 
         # grab all IDtags and assign each a color
         idtags = list(self.loss_data.keys())
@@ -216,16 +227,20 @@ class multi_WLM:
         print("Thresholds comparison plot saved as Thresholds_comparison.png")
         return
 
-    def plot_power_at_current(self, currents=[25, 50]):
+    def plot_power_at_current(self, allowance=0.5, currents=None):
         """
         currents in mA, e.g. [25, 50]. - looking at 25mA and 50mA
         Assumes self.loss_data[idtag]['current'] is in mA.
         """
+        if currents is None:
+            currents = [25, 50]
 
         idtags = list(self.loss_data.keys())
         colors = self.cmap(np.linspace(0, 1, len(idtags)))
 
         Powerfig, Powerax = plt.subplots(figsize=(8, 6))
+        VIfig, VIax = plt.subplots(figsize=(8, 6))
+
 
         for color, idtag in zip(colors, idtags):
             df = self.loss_data[idtag]
@@ -234,6 +249,7 @@ class multi_WLM:
             cur_A = df['current'].astype(float)
             cur_mA = cur_A * 1000               # now in mA
             voltage = df['voltage'].astype(float)
+            power = df['channel 1'].astype(float)  # Ensure to use the correct channel
             
             # Filter for current >= 25mA
             mask = cur_mA >= 25.0
@@ -251,7 +267,7 @@ class multi_WLM:
             first_point = True
             for target in currents:
                 # find any row within 0.1 mA of target
-                mask = np.isclose(cur_mA, target, atol=0.1)
+                mask = np.isclose(cur_mA, target, atol=allowance)
                 if mask.any():
                     p = power[mask].iloc[0]
                     Powerax.scatter(
