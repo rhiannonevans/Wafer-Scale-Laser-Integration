@@ -4,6 +4,7 @@ import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import re
 
 from LIVclass import LIVclass
 
@@ -18,30 +19,51 @@ class multi_LIV:
         p = Path(parent_path)
         self.parent_path = parent_path
         self.cmap = plt.get_cmap('inferno')
-        
+
+        # Log selected files for debugging
+        print("Debug: Selected files:", selected_files)
 
         selected_files = self.filter_liv(selected_files) if selected_files else None
 
         if not selected_files:
             # auto‑scan for every CSV under parent_path (including subfolders)
-            self.selected_files = [
+            all_files = [
                 fp
                 for fp in p.rglob('*.csv')
                 if fp.is_file()
-                and 'loss' not in fp.name.lower()
+            ]
+            # Log all files found by rglob
+            print("Debug: All files found by rglob:", [str(fp) for fp in all_files])
+
+            self.selected_files = [
+                fp
+                for fp in all_files
+                if 'loss' not in fp.name.lower()
                 and 'liv'  in fp.name.lower()
             ]
         else:
             # assume selected_files is a list of basenames WITHOUT path, e.g.
             # ["2025_04_04_17_10_53_OSA_1330nm_ChipC32_R1", ...]
-            wanted = {name.lower() for name in selected_files}
+            # Normalize filenames for comparison
+            wanted = {Path(name).stem.lower() for name in selected_files}
 
-            # still recurse via rglob, but only keep those whose stem is in wanted
-            self.selected_files = [
+            # still recurse via rglob, but only keep those whose stem matches
+            all_files = [
                 fp
                 for fp in p.rglob('*.csv')
-                if fp.is_file() and fp.stem.lower() in wanted
+                if fp.is_file()
             ]
+            # Log all files found by rglob
+            print("Debug: All files found by rglob:", [str(fp) for fp in all_files])
+
+            self.selected_files = [
+                fp
+                for fp in all_files
+                if fp.stem.lower() in wanted
+            ]
+
+        # Log the final list of selected files
+        print("Debug: Final selected files:", [str(fp) for fp in self.selected_files])
 
         if not self.selected_files:
             print("No LIV files found!")
@@ -73,7 +95,11 @@ class multi_LIV:
 
             # read it back in
             df = pd.read_csv(loss_path)
+            print(f"Processing file: {csv_fp.name}")
             idtag = self.get_IDtag(csv_fp.name)
+            print(f"Extracted ID tag: {idtag}")
+            if idtag in self.loss_data:
+                print(f"Warning: Duplicate ID tag detected for {idtag}. Overwriting previous data.")
 
             self.loss_data[idtag] = df
             print(f"   ✓ loaded loss_data for {idtag}  ({len(df)} rows)")
@@ -84,15 +110,22 @@ class multi_LIV:
         self.compPlots()
         self.plot_thresholds()
         self.plot_power_at_current(currents=[0.025, 0.050])  # 25mA and 50mA
+        self.plot_chip_thresholds()
         #plt.show()
 
     def filter_liv(self, selected_files = []):
+        # Log the initial list of selected files
+        print("Debug: Initial selected files:", selected_files)
+
         filtered = []
         for f in selected_files:
             # get just the filename portion
             name = os.path.basename(f)
             if 'liv' in name.lower():
                 filtered.append(f)
+
+        # Log the filtered list of files
+        print("Debug: Filtered files:", filtered)
         return filtered
             
     def check_data(self):
@@ -105,10 +138,21 @@ class multi_LIV:
 
     def get_IDtag(self, filename: str) -> str:
         base = Path(filename).stem
-        if "Chip" in base:
-            return base[base.index("Chip"):]
+        # Expanded regex to handle more variations, including '_clad' and other suffixes
+        match = re.search(r"Chip\w+_R\d+", base)
+        if match:
+            id_tag = match.group(0)
         else:
-            return "Unknown_ID"
+            # Attempt to extract ID even if '_clad' or other suffixes are present
+            match_clad = re.search(r"Chip\w+_R\d+(_clad)?", base)
+            if match_clad:
+                id_tag = match_clad.group(0).replace("_clad", "")
+            else:
+                id_tag = "Unknown_ID"
+
+        # Detailed logging for debugging
+        print(f"Debug: Filename: {filename}, Base: {base}, Extracted ID Tag: {id_tag}")
+        return id_tag
         
 
     def compPlots(self):
@@ -120,16 +164,16 @@ class multi_LIV:
 
         # grab all IDtags and assign each a color
         idtags = list(self.loss_data.keys())
-        colors = self.cmap(np.linspace(0, 1, len(idtags)))
+        colors = self.cmap(np.linspace(0.2, 0.8, len(idtags)))
 
-        # plot each device’s Current vs Channel 1 on the same plot
+        # plot each device’s Current vs Channel 2 on the same plot
         for color, idtag in zip(colors, idtags):
             df = self.loss_data[idtag]
             #thresh[idtag] = df['threshold_ch1'].values[0] 
-            # assume your loss_data DataFrame has columns 'current' and 'channel 1'
+            # assume your loss_data DataFrame has columns 'current' and 'channel 2'
             LIax.plot(
                 df['current'],
-                df['channel 1'],
+                df['channel 2'],
                 label=idtag,
                 color=color
             )
@@ -140,15 +184,15 @@ class multi_LIV:
                 color=color
             )
             TIax.plot(
+                df['current'],
                 df['temperature'],
-                df['voltage'],
                 label=idtag,
                 color=color
             )
 
         LIax.set_xlabel('Current')
-        LIax.set_ylabel('Channel 1')
-        LIax.set_title('Channel 1 vs Current for all devices')
+        LIax.set_ylabel('Channel 2')
+        LIax.set_title('Channel 2 vs Current for all devices')
         LIax.legend(title='ID Tag')
         LIfig.tight_layout()
 
@@ -265,6 +309,43 @@ class multi_LIV:
         out_path = Path(self.save_dir) / 'Power_at_current.png'
         Powerfig.savefig(out_path)
         print(f"Saved plot to {out_path}")
+        return
+    
+    def plot_chip_thresholds(self):
+        """Generates a simple plot of chip ID vs threshold_ch2 data."""
+
+        # grab all IDtags and their corresponding threshold_ch2 data
+        idtags = list(self.loss_data.keys())
+        threshold_ch2 = [
+            self.loss_data[id]['threshold_ch2'].values[0]
+            if 'threshold_ch2' in self.loss_data[id] and len(self.loss_data[id]['threshold_ch2'].values) > 0
+            else None
+            for id in idtags
+        ]
+
+        # Filter out None values and corresponding idtags
+        filtered_data = [(idtag, current) for idtag, current in zip(idtags, threshold_ch2) if current is not None]
+        if not filtered_data:
+            print("No valid threshold_ch2 data found to plot.")
+            return
+
+        idtags, threshold_ch2 = zip(*filtered_data)
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.bar(idtags, threshold_ch2, color='skyblue')
+
+        # Set labels and title
+        ax.set_xlabel('Chip ID')
+        ax.set_ylabel('Threshold Current (mA)')
+        ax.set_title('Chip ID vs Threshold Current (Channel 2)')
+        ax.set_xticks(range(len(idtags)))
+        ax.set_xticklabels(idtags, rotation=45, ha='right')
+
+        # Save the plot
+        fig.tight_layout()
+        fig.savefig(Path(self.save_dir) / 'Chip_Thresholds_Channel2.png')
+        print("Chip ID vs Threshold Current (Channel 2) plot saved as Chip_Thresholds_Channel2.png")
         return
     
 if __name__ == "__main__":

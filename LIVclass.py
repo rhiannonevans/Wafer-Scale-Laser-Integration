@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 from pathlib import Path
@@ -113,10 +112,10 @@ class LIVclass:
         ch2 = pd.to_numeric(df.loc[indices["channel 2"]],errors='coerce')  if indices["channel 2"] is not None else None
         ch3 = pd.to_numeric(df.loc[indices["channel 3"]],errors='coerce')  if indices["channel 3"] is not None else None
 
-        ch0_log = np.log(ch0) if ch0 is not None else None
-        ch1_log = np.log(ch1) if ch1 is not None else None
-        ch2_log = np.log(ch2) if ch2 is not None else None
-        ch3_log = np.log(ch3) if ch3 is not None else None
+        ch0_log = 10 * np.log10(ch0) if ch0 is not None else None
+        ch1_log = 10 * np.log10(ch1) if ch1 is not None else None
+        ch2_log = 10 * np.log10(ch2) if ch2 is not None else None
+        ch3_log = 10 * np.log10(ch3) if ch3 is not None else None
 
         if ch0 is not None:
             ch1_idx = 1
@@ -152,8 +151,11 @@ class LIVclass:
 
 
         #plotting LI curves + finding threshold
-        ch1_threshold = 0
-        ch_thresholds = []
+        # Initialize threshold variables for each channel
+        ch0_threshold = None
+        ch1_threshold = None
+        ch2_threshold = None
+        ch3_threshold = None
 
         print("plotting LI curve and finding threshold for each channel")
         num_valid = len(channels)
@@ -162,14 +164,21 @@ class LIVclass:
         else:
             for (i, ch) in enumerate(channels):
                 print(f"Processing Channel {i} with {len(ch)} data points.")
-                
+
                 # Plot all LIV curves (+derivative) and find threshold
                 ch_threshold = thresh.run_liv(self.current, ch, self.base_name, self.save_dir, i)
-                ch_thresholds.append(ch_threshold)
-                if ch1_idx == i:
-                    ch1_threshold = ch_threshold
-                    print(f"Channel 1 threshold: {ch1_threshold} mA")
 
+                # Save threshold to the corresponding variable
+                if i == 0:
+                    ch0_threshold = ch_threshold
+                elif i == 1:
+                    ch1_threshold = ch_threshold
+                elif i == 2:
+                    ch2_threshold = ch_threshold
+                elif i == 3:
+                    ch3_threshold = ch_threshold
+
+                print(f"Channel {i} threshold: {ch_threshold} mA")
 
         # Save all extracted data (search terms) to a CSV
         csv_data = {}
@@ -178,7 +187,7 @@ class LIVclass:
                 csv_data[key] = df.loc[idx].values
             else:
                 csv_data[key] = None
-                
+
         # Build DataFrame for CSV (only include non-None)
         csv_columns = []
         csv_rows = []
@@ -199,8 +208,12 @@ class LIVclass:
             csv_out["peak_power"] = self.peak_power if hasattr(self, 'peak_power') else None
             csv_out["peak_power_I"] = self.peak_power_I if hasattr(self, 'peak_power_I') else None
             csv_out["peak_power_V"] = self.peak_power_V if hasattr(self, 'peak_power_V') else None
-            csv_out["threshold_currents"] = str(ch_thresholds) if ch_thresholds else None
+            csv_out["threshold_currents"] = str([ch0_threshold, ch1_threshold, ch2_threshold, ch3_threshold])
+            csv_out["threshold_ch0"] = ch0_threshold
             csv_out["threshold_ch1"] = ch1_threshold
+            csv_out["threshold_ch2"] = ch2_threshold
+            csv_out["threshold_ch3"] = ch3_threshold
+
             csv_filename = self.base_name + "_loss_data.csv"
             csv_save_path = os.path.join(self.save_dir, csv_filename)
             csv_out.to_csv(csv_save_path, index=False)
