@@ -95,7 +95,7 @@ class multi_LIV:
                 print(f"Loss data already exists: {loss_path}. Skipping processing.")
 
             # read it back in
-            df = pd.read_csv(loss_path)
+            df = pd.read_csv(loss_path, comment ='#', index_col=0)
             print(f"Processing file: {csv_fp.name}")
             idtag = self.get_IDtag(csv_fp.name)
             print(f"Extracted ID tag: {idtag}")
@@ -109,7 +109,7 @@ class multi_LIV:
 
 
         self.compPlots()
-        self.plot_thresholds()
+        #self.plot_thresholds()
         self.plot_power_at_current()  # 25mA and 50mA
         self.plot_chip_thresholds()
         #plt.show()

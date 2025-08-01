@@ -78,9 +78,8 @@ class multi_WLM:
         #self.check_data()
         plt.close('all')  # Close any existing plots
         self.plot_wl_v_I()
-        self.compPlots()
         self.plot_thresholds()
-        self.plot_power_at_current(currents=[25, 50])  # 25mA and 50mA
+        self.plot_power_at_current()  
         #plt.show()
 
     def filter_wlm(self, selected_files = []):

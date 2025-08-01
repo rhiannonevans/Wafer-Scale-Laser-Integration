@@ -180,6 +180,8 @@ class LIVclass:
 
                 print(f"Channel {i} threshold: {ch_threshold} mA")
 
+       
+
         # Save all extracted data (search terms) to a CSV
         csv_data = {}
         for key, idx in indices.items():
@@ -203,24 +205,41 @@ class LIVclass:
             csv_out["channel 1 (dBm)"] = ch1_log if ch1_log is not None else None
             csv_out["channel 2 (dBm)"] = ch2_log if ch2_log is not None else None
             csv_out["channel 3 (dBm)"] = ch3_log if ch3_log is not None else None
+            #del csv_out[0]
 
-            # Add peak_power and related variables as new columns to the DataFrame
-            csv_out["peak_power"] = self.peak_power if hasattr(self, 'peak_power') else None
-            csv_out["peak_power_I"] = self.peak_power_I if hasattr(self, 'peak_power_I') else None
-            csv_out["peak_power_V"] = self.peak_power_V if hasattr(self, 'peak_power_V') else None
-            csv_out["threshold_currents"] = str([ch0_threshold, ch1_threshold, ch2_threshold, ch3_threshold])
-            csv_out["threshold_ch0"] = ch0_threshold
-            csv_out["threshold_ch1"] = ch1_threshold
-            csv_out["threshold_ch2"] = ch2_threshold
-            csv_out["threshold_ch3"] = ch3_threshold
+            # # Add peak_power and related variables as new columns to the DataFrame
+            # csv_out["peak_power"] = self.peak_power if hasattr(self, 'peak_power') else None
+            # csv_out["peak_power_I"] = self.peak_power_I if hasattr(self, 'peak_power_I') else None
+            # csv_out["peak_power_V"] = self.peak_power_V if hasattr(self, 'peak_power_V') else None
+            # csv_out["threshold_currents"] = str([ch0_threshold, ch1_threshold, ch2_threshold, ch3_threshold])
+            # csv_out["threshold_ch0"] = ch0_threshold
+            # csv_out["threshold_ch1"] = ch1_threshold
+            # csv_out["threshold_ch2"] = ch2_threshold
+            # csv_out["threshold_ch3"] = ch3_threshold
 
-            csv_filename = self.base_name + "_loss_data.csv"
-            csv_save_path = os.path.join(self.save_dir, csv_filename)
-            csv_out.to_csv(csv_save_path, index=False)
-            print(f"Saved all extracted data to {csv_save_path}")
+            
         else:
             print("No valid data found to save to CSV.")
 
+        # 1) compute your metrics
+        metrics = {
+            "peak_power":   self.peak_power,
+            "peak_power_voltage":  self.peak_power_V,
+            "peak_power_current":  self.peak_power_I,
+            "ch1_threshold": ch1_threshold,
+            "all_thresholds": [ch0_threshold, ch1_threshold, ch2_threshold, ch3_threshold]
+        }
+        # 2) open file, write metrics as commented key: value
+        csv_filename = self.base_name + "_loss_data.csv"
+        csv_save_path = os.path.join(self.save_dir, csv_filename)
+
+        with open(csv_save_path, "w") as f:
+            for k, v in metrics.items():
+                f.write(f"# {k}: {v}\n")
+            # 3) now dump your raw data
+            csv_out.to_csv(f, index=True)
+
+        print(f"Saved all extracted data to {csv_save_path}")
         #plt.close('all')  # Close all plots to free up memory
 
 
