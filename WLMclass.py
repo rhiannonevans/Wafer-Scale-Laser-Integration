@@ -246,7 +246,7 @@ class WLMclass:
                 csv_data[key] = df.loc[idx].values
             else:
                 csv_data[key] = None
-                
+
         # Build DataFrame for CSV (only include non-None)
         csv_columns = []
         csv_rows = []
@@ -262,59 +262,40 @@ class WLMclass:
             csv_out["channel 1 (dBm)"] = ch1_log if ch1_log is not None else None
             csv_out["channel 2 (dBm)"] = ch2_log if ch2_log is not None else None
             csv_out["channel 3 (dBm)"] = ch3_log if ch3_log is not None else None
+            #del csv_out[0]
 
-            # Add peak_power and related variables as new columns to the DataFrame
-            csv_out["peak_power"] = self.peak_power if hasattr(self, 'peak_power') else None
-            csv_out["peak_power_I"] = self.peak_power_I if hasattr(self, 'peak_power_I') else None
-            csv_out["peak_power_V"] = self.peak_power_V if hasattr(self, 'peak_power_V') else None
-            csv_out["threshold_currents"] = str(ch_thresholds) if ch_thresholds else None
-            csv_out["threshold_ch1"] = ch1_threshold
-            csv_filename = self.base_name + "_loss_data.csv"
-            csv_save_path = os.path.join(self.save_dir, csv_filename)
-            csv_out.to_csv(csv_save_path, index=False)
-            print(f"Saved all extracted data to {csv_save_path}")
+            # # Add peak_power and related variables as new columns to the DataFrame
+            # csv_out["peak_power"] = self.peak_power if hasattr(self, 'peak_power') else None
+            # csv_out["peak_power_I"] = self.peak_power_I if hasattr(self, 'peak_power_I') else None
+            # csv_out["peak_power_V"] = self.peak_power_V if hasattr(self, 'peak_power_V') else None
+            # csv_out["threshold_currents"] = str([ch0_threshold, ch1_threshold, ch2_threshold, ch3_threshold])
+            # csv_out["threshold_ch0"] = ch0_threshold
+            # csv_out["threshold_ch1"] = ch1_threshold
+            # csv_out["threshold_ch2"] = ch2_threshold
+            # csv_out["threshold_ch3"] = ch3_threshold
+
+            
         else:
             print("No valid data found to save to CSV.")
 
-        #plt.close('all')  # Close all plots to free up memory
+        # 1) compute your metrics
+        metrics = {
+            "peak_power":   self.peak_power,
+            "peak_power_voltage":  self.peak_power_V,
+            "peak_power_current":  self.peak_power_I,
+            "peak_power_wavelength": self.peak_power_wl
+        }
+        # 2) open file, write metrics as commented key: value
+        csv_filename = self.base_name + "_loss_data.csv"
+        csv_save_path = os.path.join(self.save_dir, csv_filename)
 
-                        # Save all extracted data to a CSV, save computed values (peaks and thresholds) as comments
-        # csv_data = {}
-        # for key, idx in indices.items():
-        #     if idx is not None:
-        #         csv_data[key] = df.loc[idx].values
-        # csv_out = pd.DataFrame(csv_data)
+        with open(csv_save_path, "w") as f:
+            for k, v in metrics.items():
+                f.write(f"# {k}: {v}\n")
+            # 3) now dump your raw data
+            csv_out.to_csv(f, index=True)
 
-        # # add dBm (log) channel data if present
-        # if ch0_log  is not None: csv_out["channel 0 (dBm)"] = ch0_log
-        # if ch1_log  is not None: csv_out["channel 1 (dBm)"] = ch1_log
-        # if ch2_log  is not None: csv_out["channel 2 (dBm)"] = ch2_log
-        # if ch3_log  is not None: csv_out["channel 3 (dBm)"] = ch3_log
-
-        # # --- prepare your computed metrics --- #
-        # metrics = {
-        #     "peak_power":         getattr(self, "peak_power", None),
-        #     "peak_power_I":       getattr(self, "peak_power_I", None),
-        #     "peak_power_V":       getattr(self, "peak_power_V", None),
-        #     "threshold_currents": ch_thresholds if ch_thresholds else None,
-        #     "threshold_ch1":      ch1_threshold
-        # }
-
-        # # --- write to one CSV: first the metadata, then the table --- #
-        # csv_filename   = self.base_name + "_loss_data.csv"
-        # csv_save_path  = Path(self.save_dir) / csv_filename
-
-        # with open(csv_save_path, "w") as f:
-        #     # write each metric as a commented line
-        #     for k, v in metrics.items():
-        #         if v is None:
-        #             continue
-        #         # pop arrays or lists straight into the header
-        #         f.write(f"# {k}: {v}\n")
-        #     # now dump the DataFrame
-        #     csv_out.to_csv(f, index=False)
-
-        # print(f"Saved all extracted data + metrics to {csv_save_path}")
+        print(f"Saved all extracted data to {csv_save_path}")
 
 
 

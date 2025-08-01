@@ -70,7 +70,7 @@ class multi_WLM:
                 print(f"Loss data already exists: {loss_path}. Skipping processing.")
 
             # read it back in
-            df = pd.read_csv(loss_path)
+            df = pd.read_csv(loss_path, comment ='#', index_col=0)
             idtag = self.get_IDtag(csv_fp.name)
 
             self.loss_data[idtag] = df
@@ -78,7 +78,7 @@ class multi_WLM:
         #self.check_data()
         plt.close('all')  # Close any existing plots
         self.plot_wl_v_I()
-        self.plot_thresholds()
+
         self.plot_power_at_current()  
         #plt.show()
 
@@ -178,54 +178,6 @@ class multi_WLM:
         print("Comparison plots successfully saved as LI_comparison.png, VI_comparison.png, and TI_comparison.png")
         return 
     
-    def plot_thresholds(self):
-        """Generates a boxplot of threshold currents for each IDtag."""
-
-        # grab all IDtags and assign each a color
-        idtags = list(self.loss_data.keys())
-        #colors = self.cmap(np.linspace(0, 1, len(idtags)))
-
-        threshold_lists = [self.loss_data[id]['threshold_ch1'].values
-                    for id in idtags]
-
-        stats = []
-        for arr in threshold_lists:
-            arr = np.asarray(arr)
-            m   = arr.mean()
-            σ   = arr.std()
-            stats.append({
-                'med':    np.median(arr),
-                'q1':     np.percentile(arr, 25),
-                'q3':     np.percentile(arr, 75),
-                'whislo': m - σ,
-                'whishi': m + σ,
-                'fliers': [],
-                'mean':   m
-            })
-
-        # Plot
-        Threshfig, Threshax = plt.subplots(figsize=(8,6))
-        Threshax.bxp(
-            stats,
-            showmeans=True,
-            meanprops=dict(marker='D', markerfacecolor='orange', markeredgecolor='black')
-        )
-
-        # Now set the x‑axis ticks and labels
-        positions = np.arange(1, len(idtags) + 1)
-        Threshax.set_xticks(positions)
-        Threshax.set_xticklabels(idtags, rotation=45, ha='right')
-
-        Threshax.set_xlabel('Chip ID')
-        Threshax.set_ylabel('Threshold Current (mA)')
-        Threshax.set_title('Threshold Currents\n(box = IQR, whiskers = ±1σ, ♦ = mean)')
-        Threshfig.tight_layout()
-
-        # Save the plot
-        Threshfig.savefig(Path(self.save_dir) / 'Thresholds_comparison.png')
-        print("Thresholds comparison plot saved as Thresholds_comparison.png")
-        return
-
     def plot_power_at_current(self, allowance=0.5, currents=None):
         """
         currents in mA, e.g. [25, 50]. - looking at 25mA and 50mA
