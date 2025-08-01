@@ -143,7 +143,7 @@ class WLMclass:
         current = df.loc[indices["current"]] if indices["current"] is not None else None
         if indices["current"] is not None:
             self.current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
-            print(current)
+            #print(current)
         else:
             print("No current data found, aborting file...")
             return
@@ -193,7 +193,7 @@ class WLMclass:
         channels = []
         channels = [ch for ch in [ch0, ch1, ch2, ch3] if ch is not None]
         print("Channels found:", len(channels))
-        print(channels)
+        #print(channels)
 
 
         # Formulate comparison data (Max power of data channel and assoc current)

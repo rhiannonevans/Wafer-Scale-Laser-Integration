@@ -30,6 +30,7 @@ class multi_LIV:
                 if fp.is_file()
                 and 'loss' not in fp.name.lower()
                 and 'liv'  in fp.name.lower()
+                and 'wlm' not in fp.name.lower()
             ]
         else:
             # assume selected_files is a list of basenames WITHOUT path, e.g.
@@ -83,7 +84,7 @@ class multi_LIV:
 
         self.compPlots()
         self.plot_thresholds()
-        self.plot_power_at_current(currents=[0.025, 0.050])  # 25mA and 50mA
+        self.plot_power_at_current(currents=[25, 50])  # 25mA and 50mA
         #plt.show()
 
     def filter_liv(self, selected_files = []):
@@ -219,10 +220,10 @@ class multi_LIV:
         print("Thresholds comparison plot saved as Thresholds_comparison.png")
         return
 
-    def plot_power_at_current(self, currents=[0.025, 0.050]):
+    def plot_power_at_current(self, currents=[25, 50]):
         """
-        currents in A, e.g. [0.025, 0.050]. - looking at 25mA and 50mA
-        Assumes self.loss_data[idtag]['current'] is in A.
+        currents in mA, e.g. [25, 50]. - looking at 25mA and 50mA
+        Assumes self.loss_data[idtag]['current'] is in mA.
         """
 
         idtags = list(self.loss_data.keys())

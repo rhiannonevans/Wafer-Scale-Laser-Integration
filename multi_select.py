@@ -23,7 +23,7 @@ def scrape_filenames(root, parent_folder=None):
         return
 
     subfolder_names = [name for name in os.listdir(parent_folder)
-                       if os.path.isdir(os.path.join(parent_folder, name))]
+                       if os.path.isdir(os.path.join(parent_folder, name)) and name not in ['OSA_Comparison', 'LIV_Comparison', 'WLM_Comparison']]
 
     selected_names = []
 

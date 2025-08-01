@@ -1,0 +1,7 @@
+README.md
+setup.py
+WaferIntegration.egg-info/PKG-INFO
+WaferIntegration.egg-info/SOURCES.txt
+WaferIntegration.egg-info/dependency_links.txt
+WaferIntegration.egg-info/requires.txt
+WaferIntegration.egg-info/top_level.txt

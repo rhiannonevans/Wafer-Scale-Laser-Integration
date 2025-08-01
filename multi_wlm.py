@@ -81,7 +81,7 @@ class multi_WLM:
         self.plot_wl_v_I()
         self.compPlots()
         self.plot_thresholds()
-        self.plot_power_at_current(currents=[0.025, 0.050])  # 25mA and 50mA
+        self.plot_power_at_current(currents=[25, 50])  # 25mA and 50mA
         #plt.show()
 
     def filter_wlm(self, selected_files = []):
@@ -216,11 +216,11 @@ class multi_WLM:
         Threshfig.savefig(Path(self.save_dir) / 'Thresholds_comparison.png')
         print("Thresholds comparison plot saved as Thresholds_comparison.png")
         return
-    
-    def plot_power_at_current(self, currents=[0.025, 0.050]):
+
+    def plot_power_at_current(self, currents=[25, 50]):
         """
-        currents in A, e.g. [0.025, 0.050]. - looking at 25mA and 50mA
-        Assumes self.loss_data[idtag]['current'] is in A.
+        currents in mA, e.g. [25, 50]. - looking at 25mA and 50mA
+        Assumes self.loss_data[idtag]['current'] is in mA.
         """
 
         idtags = list(self.loss_data.keys())
@@ -252,7 +252,7 @@ class multi_WLM:
                     first_point = False
                     #print(f"{idtag}: found I={target} mA → P={p:.3f}")
                 else:
-                    print(f"{idtag}: no I≈{target} mA (available: {np.round(cur_mA.unique(),3)[:5]} …)")
+                    print(f"{idtag}: no I≈{target} mA (available: {np.round(cur_mA.unique(),3)} …)")
 
         Powerax.set_xlabel('Current (mA)')
         Powerax.set_ylabel('Power (mW)')
@@ -278,6 +278,7 @@ class multi_WLM:
 
         for color, idtag in zip(colors, idtags):
             df = self.loss_data[idtag]
+            print(df.columns)
 
             # convert to floats
             cur_A = df['current'].astype(float)

@@ -61,13 +61,13 @@ def fit_idvdi(I,V, base_name=None, save_dir=None):
 def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
 
     L=np.log(channel)
-    print(I)
+    #print(I)
 
     # Mask for 4 < I < 20 mA
     mask = (I > 4) & (I < 20)
     I_sub = I[mask]
     L_sub = L[mask]
-    print(f"Subtracted I: {I_sub}")
+    #print(f"Subtracted I: {I_sub}")
     # Compute first and second derivatives
     d1 = np.diff(L_sub)
     d2 = np.diff(d1)
@@ -277,7 +277,7 @@ def main():
         for i, channel in enumerate(channels):
             if channel is None:
                 continue
-            print(f"Channel {i} Data:")
+            #print(f"Channel {i} Data:")
 
             threshold = run_liv(current, voltage, channel)
 

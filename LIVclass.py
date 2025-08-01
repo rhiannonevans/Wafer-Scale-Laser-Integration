@@ -83,7 +83,7 @@ class LIVclass:
                 indices[key] = matches.idxmax()
             else:
                 indices[key] = None
-        print("Indices found:", indices)
+        #print("Indices found:", indices)
         # Remove the first column (used for matching)
         del df[0]
 
@@ -126,7 +126,7 @@ class LIVclass:
         channels = []
         channels = [ch for ch in [ch0, ch1, ch2, ch3] if ch is not None]
         print("Channels found:", len(channels))
-        print(channels)
+        #print(channels)
 
 
         # Formulate comparison data (Max power of data channel and assoc current)
