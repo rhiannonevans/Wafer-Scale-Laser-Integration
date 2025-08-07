@@ -16,11 +16,8 @@ import scipy.io
             - VI curve
             - Wavelength vs Temperature
             - Wavelength vs Current
-            - I * dV/dI curve (differential resistance) - with fit
-            - Second and third derivatives of LI curve
 
     Computed Values:
-            - Threshold current for each channel
             - Peak Power in channel 1
             - Voltage at peak power in channel 1
             - Current at peak power in channel 1
