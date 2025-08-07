@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 
 class OSAclass:
     def __init__(self, path, output_folder=None):
+        plt.close('all')  # Close all existing plots to avoid clutter
         self.path = Path(path)
         if not self.path.exists():
             raise FileNotFoundError(f"Cannot find input CSV: {self.path}")

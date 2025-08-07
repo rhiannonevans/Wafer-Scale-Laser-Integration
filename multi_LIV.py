@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import re
+import ast
+import scipy
 
 from LIVclass import LIVclass
 
@@ -84,7 +86,7 @@ class multi_LIV:
             # sanitize_data should write out a file like "foo_loss_data.csv"
             # and return its path (as a str or Path)
 
-            loss_path = csv_fp.with_name(csv_fp.stem + '_loss_data.csv')
+            loss_path = csv_fp.with_name(csv_fp.stem + '.mat')
             if self.overwrite_existing or not loss_path.exists():
                 try:
                     liv_instance = LIVclass(csv_fp, output_folder=csv_fp.parent)
@@ -95,24 +97,78 @@ class multi_LIV:
                 print(f"Loss data already exists: {loss_path}. Skipping processing.")
 
             # read it back in
-            df = pd.read_csv(loss_path, comment ='#', index_col=0)
+            df = self.read_mat(loss_path)
+            print(df)
             print(f"Processing file: {csv_fp.name}")
             idtag = self.get_IDtag(csv_fp.name)
             print(f"Extracted ID tag: {idtag}")
             if idtag in self.loss_data:
                 print(f"Warning: Duplicate ID tag detected for {idtag}. Overwriting previous data.")
 
-            self.loss_data[idtag] = df
+            # Add metadata (vals like peak pow, threshold) from comments to the DataFrame
+            #df = self._extract_and_inject_comments(df, loss_path)
+            self.loss_data[idtag] = df 
+
             print(f"   ✓ loaded loss_data for {idtag}  ({len(df)} rows)")
         
         plt.close('all')  # Close any existing plots
-
-
         self.compPlots()
-        #self.plot_thresholds()
+        self.plot_thresholds()
         self.plot_power_at_current()  # 25mA and 50mA
         self.plot_chip_thresholds()
         #plt.show()
+
+    def read_mat(self, mat_file: Path) -> pd.DataFrame:
+        mat = scipy.io.loadmat(mat_file)
+
+        # Manually extract each known variable
+        ch0_threshold = mat['ch0_threshold'].item()
+        ch1_threshold = mat['ch1_threshold'].item()
+        ch2_threshold = mat['ch2_threshold'].item()
+        ch3_threshold = mat['ch3_threshold'].item()
+
+        channel_0 = mat['channel_0'].flatten()
+        channel_0_log = mat['channel_0_log'].flatten()
+        channel_1 = mat['channel_1'].flatten()
+        channel_1_log = mat['channel_1_log'].flatten()
+        channel_2 = mat['channel_2'].flatten()
+        channel_2_log = mat['channel_2_log'].flatten()
+        channel_3 = mat['channel_3'].flatten()
+        channel_3_log = mat['channel_3_log'].flatten()
+
+        current = mat['current'].flatten()
+        voltage = mat['voltage'].flatten()
+        temperature = mat['temperature'].flatten()
+
+        peak_power = mat['peak_power'].item()
+        peak_power_I = mat['peak_power_I'].item()
+        peak_power_V = mat['peak_power_V'].item()
+
+        # Combine into DataFrame (only variables with 1D array shape can go into DataFrame columns)
+        df = pd.DataFrame({
+            'current': current,
+            'voltage': voltage,
+            'temperature': temperature,
+            'channel_0': channel_0,
+            'channel_0_log': channel_0_log,
+            'channel_1': channel_1,
+            'channel_1_log': channel_1_log,
+            'channel_2': channel_2,
+            'channel_2_log': channel_2_log,
+            'channel_3': channel_3,
+            'channel_3_log': channel_3_log,
+        })
+
+        # Add scalar values as metadata or new columns (same value repeated)
+        df['ch0_threshold'] = ch0_threshold
+        df['ch1_threshold'] = ch1_threshold
+        df['ch2_threshold'] = ch2_threshold
+        df['ch3_threshold'] = ch3_threshold
+        df['peak_power'] = peak_power
+        df['peak_power_I'] = peak_power_I
+        df['peak_power_V'] = peak_power_V
+        return df
+
 
     def filter_liv(self, selected_files = []):
         # Log the initial list of selected files
@@ -156,7 +212,6 @@ class multi_LIV:
         print(f"Debug: Filename: {filename}, Base: {base}, Extracted ID Tag: {id_tag}")
         return id_tag
         
-
     def compPlots(self):
         """Generates comparison plots for LI, VI, and TI curves."""
         LIfig, LIax = plt.subplots(figsize=(8, 6))
@@ -172,7 +227,7 @@ class multi_LIV:
             df = self.loss_data[idtag]
             LIax.plot(
                 df['current'],
-                df['channel 2'],
+                df['channel_2'],
                 label=idtag,
                 color=color
             )
@@ -218,37 +273,35 @@ class multi_LIV:
         return 
 
     def plot_thresholds(self):
-        """Generates a boxplot of threshold currents for each IDtag."""
+        """Generates a boxplot of (ch1) threshold currents for each IDtag."""
         idtags = list(self.loss_data.keys())
-        threshold_lists = [self.loss_data[id]['threshold_ch1'].values for id in idtags]
+        threshold_list = [self.loss_data[id]['ch1_threshold'].values[0] for id in idtags]
+        # Replace None values in threshold_list with np.nan
+        threshold_list = [np.nan if v is None else v for v in threshold_list]
+        print(threshold_list)
 
-        stats = []
-        for arr in threshold_lists:
-            arr = np.asarray(arr)
-            m = arr.mean()
-            σ = arr.std()
-            stats.append({
-                'med': np.median(arr),
-                'q1': np.percentile(arr, 25),
-                'q3': np.percentile(arr, 75),
-                'whislo': m - σ,
-                'whishi': m + σ,
-                'fliers': [],
-                'mean': m
-            })
+
+        
 
         Threshfig, Threshax = plt.subplots(figsize=(8, 6))
-        Threshax.bxp(
-            stats,
-            showmeans=True,
-            meanprops=dict(marker='D', markerfacecolor='orange', markeredgecolor='black')
+        Threshax.boxplot(
+            threshold_list,
+            notch=False,              # Show notch (median CI)
+            vert=True,               # Vertical boxplot
+            whis=1.5,                 # Whisker length in IQR multiples
+            patch_artist=True,        # Enable fill color
+            boxprops=dict(facecolor="lightblue", color="blue"),
+            medianprops=dict(color="red", linewidth=2),
+            whiskerprops=dict(color="black", linewidth=1.5),
+            capprops=dict(color="black", linewidth=1.5),
+            flierprops=dict(marker='o', color='green', markersize=6, alpha=0.5)
         )
 
-        positions = np.arange(1, len(idtags) + 1)
-        Threshax.set_xticks(positions)
-        Threshax.set_xticklabels(idtags, rotation=45, ha='right', fontsize=14)
+        # positions = np.arange(1, len(idtags) + 1)
+        # Threshax.set_xticks(positions)
+        # Threshax.set_xticklabels(idtags, rotation=45, ha='right', fontsize=14)
 
-        Threshax.set_xlabel('Chip ID', fontsize=16)
+        Threshax.set_xlabel('Device Channel 1', fontsize=16)
         Threshax.set_ylabel('Threshold Current (mA)', fontsize=16)
         Threshax.set_title('Threshold Currents\n(box = IQR, whiskers = ±1σ, ♦ = mean)', fontsize=16)
         Threshax.tick_params(axis='both', labelsize=14)
@@ -258,7 +311,7 @@ class multi_LIV:
         print("Thresholds comparison plot saved as Thresholds_comparison.png")
         return
 
-    def plot_power_at_current(self, allowance= 0.5):
+    def plot_power_at_current(self, allowance= 0.01):
 
         # Generates two separate bar plots for power at 25mA and 50mA for each chip ID. Allowance is the tolerance for current matching (i.e. 24.5 ~ 25.5 for 25mA).
         idtags = list(self.loss_data.keys())
@@ -266,7 +319,7 @@ class multi_LIV:
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
-            power = df['channel 2'].astype(float) #Ensure to use the correct channel
+            power = df['channel_2'].astype(float) #Ensure to use the correct channel
             mask = np.isclose(cur_mA, 25, atol=allowance)
             if mask.any():
                 power_25mA.append(power[mask].iloc[0])
@@ -291,7 +344,7 @@ class multi_LIV:
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
-            power = df['channel 1'].astype(float) #Ensure to use the correct channel
+            power = df['channel_1'].astype(float) #Ensure to use the correct channel
             mask = np.isclose(cur_mA, 50, atol=allowance)
             if mask.any():
                 power_50mA.append(power[mask].iloc[0])
@@ -315,7 +368,7 @@ class multi_LIV:
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
-            power_dBm = df['channel 2 (dBm)'].astype(float)  #
+            power_dBm = df['channel_2_log'].astype(float)  #
             mask = np.isclose(cur_mA, 25, atol=allowance)
             if mask.any():
                 power_25mA_dBm.append(power_dBm[mask].iloc[0])
@@ -339,7 +392,7 @@ class multi_LIV:
         for idtag in idtags:
             df = self.loss_data[idtag]
             cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
-            power_dBm = df['channel 2 (dBm)'].astype(float)  # Assuming channel 2 contains dBm values
+            power_dBm = df['channel_2_log'].astype(float)  # Assuming channel 2 contains dBm values
             mask = np.isclose(cur_mA, 50, atol=allowance)
             if mask.any():
                 power_50mA_dBm.append(power_dBm[mask].iloc[0])
@@ -363,21 +416,21 @@ class multi_LIV:
         """Generates a simple plot of chip ID vs threshold_ch2 data."""
         idtags = list(self.loss_data.keys())
         threshold_ch2 = [
-            self.loss_data[id]['threshold_ch2'].values[0]
-            if 'threshold_ch2' in self.loss_data[id] and len(self.loss_data[id]['threshold_ch2'].values) > 0
+            self.loss_data[id]['ch2_threshold'].values[0]
+            if 'ch2_threshold' in self.loss_data[id]
             else None
             for id in idtags
         ]
 
         filtered_data = [(idtag, current) for idtag, current in zip(idtags, threshold_ch2) if current is not None]
         if not filtered_data:
-            print("No valid threshold_ch2 data found to plot.")
+            print("No valid ch2_threshold data found to plot.")
             return
 
-        idtags, threshold_ch2 = zip(*filtered_data)
+        idtags, ch2_threshold = zip(*filtered_data)
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.bar(idtags, threshold_ch2, color='skyblue')
+        ax.bar(idtags, ch2_threshold, color='skyblue')
 
         ax.set_xlabel('Chip ID', fontsize=16)
         ax.set_ylabel('Threshold Current (mA)', fontsize=16)

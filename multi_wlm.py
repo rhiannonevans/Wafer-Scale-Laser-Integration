@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import re
+import scipy
 
 from WLMclass import WLMclass
 
@@ -59,7 +60,7 @@ class multi_WLM:
             # sanitize_data should write out a file like "foo_loss_data.csv"
             # and return its path (as a str or Path)
 
-            loss_path = csv_fp.with_name(csv_fp.stem + '_loss_data.csv')
+            loss_path = csv_fp.with_name(csv_fp.stem + '.mat')
             if self.overwrite_existing or not loss_path.exists():
                 try:
                     wlm_instance = WLMclass(csv_fp, output_folder=csv_fp.parent)
@@ -70,7 +71,7 @@ class multi_WLM:
                 print(f"Loss data already exists: {loss_path}. Skipping processing.")
 
             # read it back in
-            df = pd.read_csv(loss_path, comment ='#', index_col=0)
+            df = self.read_mat(loss_path.with_suffix('.mat'))
             idtag = self.get_IDtag(csv_fp.name)
 
             self.loss_data[idtag] = df
@@ -81,6 +82,52 @@ class multi_WLM:
 
         self.plot_power_at_current()  
         #plt.show()
+
+    def read_mat(self, mat_file: Path) -> pd.DataFrame:
+        mat = scipy.io.loadmat(mat_file)
+
+        # Manually extract each known variable
+        channel_0 = mat['channel_0'].flatten()
+        channel_0_log = mat['channel_0_log'].flatten()
+        channel_1 = mat['channel_1'].flatten()
+        channel_1_log = mat['channel_1_log'].flatten()
+        channel_2 = mat['channel_2'].flatten()
+        channel_2_log = mat['channel_2_log'].flatten()
+        channel_3 = mat['channel_3'].flatten()
+        channel_3_log = mat['channel_3_log'].flatten()
+
+        current = mat['current'].flatten()
+        voltage = mat['voltage'].flatten()
+        temperature = mat['temperature'].flatten()
+        wavelength = mat['wavelength'].flatten()
+
+        peak_power = mat['peak_power'].item()
+        peak_power_I = mat['peak_power_I'].item()
+        peak_power_V = mat['peak_power_V'].item()
+        peak_power_wl = mat['peak_power_wl'].item()
+
+        # Combine into DataFrame (only variables with 1D array shape can go into DataFrame columns)
+        df = pd.DataFrame({
+            'current': current,
+            'voltage': voltage,
+            'temperature': temperature,
+            'wavelength': wavelength,
+            'channel_0': channel_0,
+            'channel_0_log': channel_0_log,
+            'channel_1': channel_1,
+            'channel_1_log': channel_1_log,
+            'channel_2': channel_2,
+            'channel_2_log': channel_2_log,
+            'channel_3': channel_3,
+            'channel_3_log': channel_3_log,
+        })
+
+        # Add scalar values as metadata or new columns (same value repeated)
+        df['peak_power'] = peak_power
+        df['peak_power_I'] = peak_power_I
+        df['peak_power_V'] = peak_power_V
+        df['peak_power_wl'] = peak_power_wl
+        return df
 
     def filter_wlm(self, selected_files = []):
         filtered = []
@@ -132,11 +179,10 @@ class multi_WLM:
         # plot each device’s Current vs Channel 1 on the same plot
         for color, idtag in zip(colors, idtags):
             df = self.loss_data[idtag]
-            #thresh[idtag] = df['threshold_ch1'].values[0] 
             # assume your loss_data DataFrame has columns 'current' and 'channel 1'
             LIax.plot(
                 df['current'],
-                df['channel 1'],
+                df['channel_1'],
                 label=idtag,
                 color=color
             )
@@ -200,7 +246,7 @@ class multi_WLM:
             cur_A = df['current'].astype(float)
             cur_mA = cur_A * 1000               # now in mA
             voltage = df['voltage'].astype(float)
-            power = df['channel 1'].astype(float)  # Ensure to use the correct channel
+            power = df['channel_1'].astype(float)  # Ensure to use the correct channel
             
             # Filter for current >= 25mA
             mask = cur_mA >= 25.0

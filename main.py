@@ -16,15 +16,15 @@ if __name__ == "__main__":
     # Ask if the user wants to overwrite existing files
     overwrite_existing = tk.messagebox.askyesno("Overwrite Existing Files", "Do you want to overwrite existing files?")
 
-    ## TODO: fix threshold box plot for wlm and liv - works but doesnt look right
-
-    # Create instances of each multi_ class - will check file names and only run if 'liv', 'osa', or 'wlm' is in the file name 
-    print("Processing WLM files...")
-    multi_wlm = multi_WLM(parent_dir, selected_files=file_selection, overwrite_existing=overwrite_existing)
-    print("Processing LIV files...")
-    multi_liv = multi_LIV(parent_dir, selected_files=file_selection, overwrite_existing=overwrite_existing)
-    print("Processing OSA files...")
-    multi_osa = multi_OSA(parent_dir, selected_files=file_selection, overwrite_existing=overwrite_existing)
-
+    print(f"Selected files: {file_selection}")
+    if any('liv' in filename.lower() for filename in file_selection):
+        print("Processing LIV files...")
+        multi_liv = multi_LIV(parent_dir, selected_files=file_selection, overwrite_existing=overwrite_existing)
+    if any('osa' in filename.lower() for filename in file_selection):
+        print("Processing OSA files...")
+        multi_osa = multi_OSA(parent_dir, selected_files=file_selection, overwrite_existing=overwrite_existing)
+    if any('wlm' in filename.lower() for filename in file_selection):
+        print("Processing WLM files...")
+        multi_wlm = multi_WLM(parent_dir, selected_files=file_selection, overwrite_existing=overwrite_existing)
 
     root.destroy()

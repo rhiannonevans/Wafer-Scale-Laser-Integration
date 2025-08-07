@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import threshold as thresh
+import scipy.io
 
 """ 
     WLM class for processing Wavelength Meter measurement files (LIV-type files with additional wavelength data). Processes raw measurement csvs, 
@@ -126,7 +127,6 @@ class WLMclass:
             "channel 3": "3"
         }
 
-
         # Find indices where these terms occur
         indices = {}
         for key, term in search_terms.items():
@@ -142,7 +142,7 @@ class WLMclass:
         # Extract data rows from the DataFrame
         current = df.loc[indices["current"]] if indices["current"] is not None else None
         if indices["current"] is not None:
-            self.current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') * 1000
+            self.current = pd.to_numeric(df.loc[indices["current"]], errors='coerce') 
             #print(current)
         else:
             print("No current data found, aborting file...")
@@ -214,95 +214,59 @@ class WLMclass:
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
-        # Get thresholds
-        # PLOT differential resistance (dV/dI vs I)   
-        thresh.fit_idvdi(self.current, self.voltage, self.base_name, self.save_dir)
+        # # Get thresholds
+        # # PLOT differential resistance (dV/dI vs I)   
+        # thresh.fit_idvdi(self.current, self.voltage, self.base_name, self.save_dir)
 
 
-        #plotting LI curves + finding threshold
-        ch1_threshold = 0
-        ch_thresholds = []
+        # #plotting LI curves + finding threshold
+        # ch1_threshold = 0
+        # ch_thresholds = []
 
-        print("plotting LI curve and finding threshold for each channel")
-        num_valid = len(channels)
-        if num_valid == 0:
-            print("No valid channels to plot.")
-        else:
-            for (i, ch) in enumerate(channels):
-                print(f"Processing Channel {i} with {len(ch)} data points.")
+        # print("plotting LI curve and finding threshold for each channel")
+        # num_valid = len(channels)
+        # if num_valid == 0:
+        #     print("No valid channels to plot.")
+        # else:
+        #     for (i, ch) in enumerate(channels):
+        #         print(f"Processing Channel {i} with {len(ch)} data points.")
                 
-                # Plot all LIV curves (+derivative) and find threshold
-                ch_threshold = thresh.run_liv(self.current, ch, self.base_name, self.save_dir, i)
-                ch_thresholds.append(ch_threshold)
-                if ch1_idx == i:
-                    ch1_threshold = ch_threshold
-                    print(f"Channel 1 threshold: {ch1_threshold} mA")
+        #         # Plot all LIV curves (+derivative) and find threshold
+        #         ch_threshold = thresh.run_liv(self.current, ch, self.base_name, self.save_dir, i)
+        #         ch_thresholds.append(ch_threshold)
+        #         if ch1_idx == i:
+        #             ch1_threshold = ch_threshold
+        #             print(f"Channel 1 threshold: {ch1_threshold} mA")
 
-
-        # Save all extracted data (search terms) to a CSV
-        csv_data = {}
-        for key, idx in indices.items():
-            if idx is not None:
-                csv_data[key] = df.loc[idx].values
-            else:
-                csv_data[key] = None
-
-        # Build DataFrame for CSV (only include non-None)
-        csv_columns = []
-        csv_rows = []
-        for key, values in csv_data.items():
-            if values is not None:
-                csv_columns.append(key)
-                csv_rows.append(values)
-        if csv_rows:
-            csv_out = pd.DataFrame(csv_rows, index=csv_columns).transpose()
-
-            # add dBm (log) channel data
-            csv_out["channel 0 (dBm)"] = ch0_log if ch0_log is not None else None
-            csv_out["channel 1 (dBm)"] = ch1_log if ch1_log is not None else None
-            csv_out["channel 2 (dBm)"] = ch2_log if ch2_log is not None else None
-            csv_out["channel 3 (dBm)"] = ch3_log if ch3_log is not None else None
-            #del csv_out[0]
-
-            # # Add peak_power and related variables as new columns to the DataFrame
-            # csv_out["peak_power"] = self.peak_power if hasattr(self, 'peak_power') else None
-            # csv_out["peak_power_I"] = self.peak_power_I if hasattr(self, 'peak_power_I') else None
-            # csv_out["peak_power_V"] = self.peak_power_V if hasattr(self, 'peak_power_V') else None
-            # csv_out["threshold_currents"] = str([ch0_threshold, ch1_threshold, ch2_threshold, ch3_threshold])
-            # csv_out["threshold_ch0"] = ch0_threshold
-            # csv_out["threshold_ch1"] = ch1_threshold
-            # csv_out["threshold_ch2"] = ch2_threshold
-            # csv_out["threshold_ch3"] = ch3_threshold
-
-            
-        else:
-            print("No valid data found to save to CSV.")
-
-        # 1) compute your metrics
-        metrics = {
-            "peak_power":   self.peak_power,
-            "peak_power_voltage":  self.peak_power_V,
-            "peak_power_current":  self.peak_power_I,
-            "peak_power_wavelength": self.peak_power_wl
+        data_dict = {
+            "current": self.current,
+            "voltage": self.voltage,
+            "temperature": self.temperature,
+            "wavelength": self.wavelength,
+            "channel_0": ch0,
+            "channel_1": ch1,
+            "channel_2": ch2,
+            "channel_3": ch3,
+            "channel_0_log": ch0_log,
+            "channel_1_log": ch1_log,
+            "channel_2_log": ch2_log,
+            "channel_3_log": ch3_log,
+            "peak_power": self.peak_power,
+            "peak_power_I": self.peak_power_I,
+            "peak_power_V": self.peak_power_V,
+            "peak_power_wl": self.peak_power_wl
         }
-        # 2) open file, write metrics as commented key: value
-        csv_filename = self.base_name + "_loss_data.csv"
-        csv_save_path = os.path.join(self.save_dir, csv_filename)
-
-        with open(csv_save_path, "w") as f:
-            for k, v in metrics.items():
-                f.write(f"# {k}: {v}\n")
-            # 3) now dump your raw data
-            csv_out.to_csv(f, index=True)
-
-        print(f"Saved all extracted data to {csv_save_path}")
 
 
-
+        # Save the data dictionary to a .mat file in the output folder
+        mat_filename = self.base_name + ".mat"
+        save_path_mat = os.path.join(self.save_dir, mat_filename)
+        scipy.io.savemat(save_path_mat, data_dict)
+        print(f"Data dictionary saved to {save_path_mat}")
             
 
 if __name__ == "__main__":
-    csv_file = Path(r"C:\Users\OWNER\Desktop\LIV_0604\LIV\2025_05_29_19_22_31_bothLIVwlm_1330nm_channel2_ChipD30_R0_clad\2025_05_29_19_22_31_bothLIVwlm_1330nm_channel2_ChipD30_R0_clad.csv")
+    csv_file = Path(r"C:\Users\OWNER\Downloads\LIV (4)\LIV\2025_06_27_13_49_37_wlmLIV_1310nm_ChipC32_R4_clad\2025_06_27_13_49_37_wlmLIV_1310nm_ChipC32_R4_clad.csv")
     if not csv_file.exists():
         raise FileNotFoundError(f"Cannot find input CSV: {csv_file}")
     WLMclass(str(csv_file))
