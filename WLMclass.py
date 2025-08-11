@@ -46,7 +46,7 @@ class WLMclass:
 
     def plot_iv(self):
         fig2, ax2 = plt.subplots()
-        ax2.plot(self.current, self.voltage, color='black', marker='o', label="IV Curve")
+        ax2.plot(self.current*1000, self.voltage, color='black', marker='o', label="IV Curve")
         ax2.set_title(f"Current vs Voltage")
         ax2.set_xlabel("Current (mA)")
         ax2.set_ylabel("Voltage (V)")
@@ -92,7 +92,7 @@ class WLMclass:
     def plot_wl_vs_current(self):
         fig, ax = plt.subplots()
         mask = self.wavelength > 1000
-        ax.scatter(self.current[mask], self.wavelength[mask], color='black', marker='o')
+        ax.scatter(self.current[mask]*1000, self.wavelength[mask], color='black', marker='o')
         ax.set_title("Wavelength vs Current")
         ax.set_xlabel("Current (mA)")
         ax.set_ylabel("Wavelength (nm)")
