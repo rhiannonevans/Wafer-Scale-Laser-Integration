@@ -196,9 +196,9 @@ class multi_LIV:
     def get_IDtag(self, filename: str) -> str:
         base = Path(filename).stem
         # Expanded regex to handle more variations, including '_clad' and other suffixes
-        matchR = re.search(r"Chip\w+_R\d+(_clad)?", base)
-        matchL = re.search(r"Chip\w+_L\d+(_clad)?", base)
-        matchD = re.search(r"Chip\w+_D\d+(_clad)?", base)
+        matchR = re.search(r"Chip\w+_R\d+(_clad)?(__iter\d+)?", base)
+        matchL = re.search(r"Chip\w+_L\d+(_clad)?(__iter\d+)?", base)
+        matchD = re.search(r"Chip\w+_D\d+(_clad)?(__iter\d+)?", base)
         if matchR:
             id_tag = matchR.group(0)  # Retain '_clad' if present
         elif matchL:
@@ -318,7 +318,7 @@ class multi_LIV:
         power_25mA = []
         for idtag in idtags:
             df = self.loss_data[idtag]
-            cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
+            cur_mA = df['current'].astype(float)  # Convert current to mA
             power = df['channel_2'].astype(float) #Ensure to use the correct channel
             mask = np.isclose(cur_mA, 25, atol=allowance)
             if mask.any():
@@ -343,7 +343,7 @@ class multi_LIV:
         power_50mA = []
         for idtag in idtags:
             df = self.loss_data[idtag]
-            cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
+            cur_mA = df['current'].astype(float) # Convert current to mA
             power = df['channel_1'].astype(float) #Ensure to use the correct channel
             mask = np.isclose(cur_mA, 50, atol=allowance)
             if mask.any():
@@ -367,7 +367,7 @@ class multi_LIV:
         power_25mA_dBm = []
         for idtag in idtags:
             df = self.loss_data[idtag]
-            cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
+            cur_mA = df['current'].astype(float)  # Convert current to mA
             power_dBm = df['channel_2_log'].astype(float)  #
             mask = np.isclose(cur_mA, 25, atol=allowance)
             if mask.any():
@@ -391,7 +391,7 @@ class multi_LIV:
         power_50mA_dBm = []
         for idtag in idtags:
             df = self.loss_data[idtag]
-            cur_mA = df['current'].astype(float) * 1000  # Convert current to mA
+            cur_mA = df['current'].astype(float)  # Convert current to mA
             power_dBm = df['channel_2_log'].astype(float)  # Assuming channel 2 contains dBm values
             mask = np.isclose(cur_mA, 50, atol=allowance)
             if mask.any():

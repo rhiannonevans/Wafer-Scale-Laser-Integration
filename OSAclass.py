@@ -245,6 +245,8 @@ class OSAclass:
         sio.savemat(os.path.join(save_dir, f"{self.base_name}_new.mat"), d_OSA, appendmat=True)
 
         print(f"Outputs saved in: {save_dir}")
+        #print(d_OSA)
+        print(OSA_df)
         
     def get_IDtag(self, filename: str) -> str:
         """Extract IDtag from filename using same method as multi_LIV"""

@@ -26,6 +26,7 @@ import scipy.io
 
 class WLMclass:
     def __init__(self, path, output_folder=None):
+        plt.close('all')  # Close all plots to free up memory
         self.path = Path(path)
         if not self.path.exists():
             raise FileNotFoundError(f"Cannot find input CSV: {self.path}")
@@ -37,6 +38,7 @@ class WLMclass:
 
         #Plot IV curve and rest of WLM plots
         self.plot_iv()
+        self.plot_li()
         self.plot_wl_vs_temp()
         self.plot_wl_vs_current()
         #plt.show()
@@ -106,6 +108,49 @@ class WLMclass:
         save_path_wl_current1 = os.path.join(self.save_dir, wl_current_filename1)
         fig.savefig(save_path_wl_current1, format="png", bbox_inches="tight")
         print(f"Saved  Wavelength vs Current plot to {save_path_wl_current1}")
+
+        return
+    
+    def plot_li(self):
+        
+        I = self.current
+
+        for ch_i, channel in enumerate([self.ch0, self.ch1, self.ch2, self.ch3], start=0):
+            if channel is None or channel.empty:
+                continue  # Skip if channel data is not available
+
+            fig_combined, (ax2, ax3) = plt.subplots(1, 2, figsize=(14, 6))
+
+            L = channel
+            log = np.log(channel)
+            # Plot LI (LOG) curve in dBm
+            ax2.plot(I, log, marker='o', label='Power (dBm)')
+            ax2.set_ylabel("Power (dBm)")
+            ax2.set_title(f"Ch {ch_i}: Power (dBm) vs Current (mA)")
+            #ax2.legend()
+            ax2.grid(True)
+
+            # Plot LI curve in mW
+            ax3.plot(I, L, marker='o', label='Power (mW)')
+            ax3.set_xlabel("Current (mA)")
+            ax3.set_ylabel("Power (mW)")
+            ax3.set_title(f"Ch {ch_i}: Power (mW) vs Current (mA)")
+            #ax3.legend()
+            ax3.grid(True)
+
+            fig_combined.tight_layout()
+
+            # Save the channel plot as an SVG file in the output folder
+            svg_filename = self.base_name + f"_LI_ch{ch_i}.svg"
+            save_path_svg = os.path.join(self.save_dir, svg_filename)
+            fig_combined.savefig(save_path_svg, format="svg", bbox_inches="tight")
+            print(f"Saved channel {ch_i} plot to {save_path_svg}")
+
+            # Save the channel plot as an PNG file in the output folder
+            png_filename = self.base_name + f"_LI_ch{ch_i}.png"
+            save_path_png = os.path.join(self.save_dir, png_filename)
+            fig_combined.savefig(save_path_png, format="png", bbox_inches="tight")
+            print(f"Saved channel {ch_i} plot to {save_path_png}")
 
         return
 
@@ -234,6 +279,15 @@ class WLMclass:
         #         if ch1_idx == i:
         #             ch1_threshold = ch_threshold
         #             print(f"Channel 1 threshold: {ch1_threshold} mA")
+
+        self.ch0 = ch0
+        self.ch1 = ch1
+        self.ch2 = ch2
+        self.ch3 = ch3
+        self.ch0_log = ch0_log
+        self.ch1_log = ch1_log
+        self.ch2_log = ch2_log
+        self.ch3_log = ch3_log
 
         data_dict = {
             "current": self.current,
