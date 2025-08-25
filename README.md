@@ -151,3 +151,17 @@ Plots:
 1. Voltage vs Current (VI curves)
 2. Wavelength vs Current 
 
+# Critical Files
+Do not delete under any circumstances:
+- main.py
+- OSAclass.py
+- LIVclass.py
+- WLMclass.py
+- multi_osa.py
+- mutli_LIV.py
+- multi_wlm.py
+- multi_select.py
+- threshold.py
+
+Useful files for future development:
+- maintenance.py (clears the folder and subfolders of all files, except the raw measurement .csvs)
