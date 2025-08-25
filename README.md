@@ -59,6 +59,24 @@ Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files
 
 ## OSA:
 ### Individual Files:
+Saved to .mat:
+
+1. For each Sweep:
+    - Current (single value) 
+    - Temperature (single value)
+    - Wavelength
+    - Optical Power 
+    - Peak Power in Sweep (single value)
+    - Wavelength at peak power (single value)
+2. 2nd Degree Polynomial fit parameters (Peak WL vs Current for each Sweep)
+3. 3rd Degree Polynomial fit parameters (Peak WL vs Current for each Sweep)
+
+
+Plots (One per type, containing all sweeps):
+1. Peak Power vs Current
+2. Optical Power vs Wavelength
+3. Peak Wavelength vs Current - with 2nd degree fit
+4. Peak Wavelength vs Current - with 3rd degree fit
 
 ### Comparison:
 
@@ -87,6 +105,26 @@ Plots:
 
 ## WLM:
 ### Individual Files:
+Saved to .mat:
+1. Voltage 
+2. Current
+3. Wavelength
+4. Temperature 
+5. Peak Power (single value)
+6. Current at peak power (single value)
+7. Voltage at peak power (single value)
+8. Wavelength at peak power (single value)
+9. For each channel:
+    - Power in mW
+    - Power in dBm
+
+
+Plots:
+1. IV Curve
+2. Wavelength vs Current
+3. Temperature vs Current
+3. For each channel:
+    - LI Curve in dBm and in mW
 
 ### Comparison:
 
