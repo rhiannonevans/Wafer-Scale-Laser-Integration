@@ -57,7 +57,7 @@ Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files
 
 # Data Characterization
 
-## OSA:
+## OSA
 ### Individual Files:
 Saved to .mat:
 
@@ -120,7 +120,7 @@ Note: Data channel set manually, by default it is often either ch1 or ch2, but i
 9. LI Curves
 
 
-## WLM:
+## WLM
 ### Individual Files:
 Saved to .mat:
 1. Voltage 
