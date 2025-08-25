@@ -1,8 +1,8 @@
 # Wafer-Scale-Laser-Integration
 Intended for use with measurement .cvs of the following types and expected data:
-- Optical Spectrum Analysis (OSA): 1+ Sweeps, for each we record a single temperature and current, an array of input wavelengths (swept over) and associated optical power output
-- Power-Current-Voltage (LIV)
-- Wavelength Meter (WLM): Identical to LIV, with the addition of wavelength and temperature readings for each datapoint.
+- Optical Spectrum Analysis (OSA): Sorted in sweeps (number unlimited), for each we record a single temperature and current, and an array of input wavelengths (swept over) and associated optical power outputs.
+- Power-Current-Voltage (LIV): Current, voltage, and temperature is all-inclusive, power is channel-specific (supports up to 4 channels).
+- Wavelength Meter (WLM): Identical to LIV, with the addition of wavelength (all-inclusve).
 
     
 
@@ -79,16 +79,22 @@ Plots (One per type, containing all sweeps):
 4. Peak Wavelength vs Current - with 3rd degree fit
 
 ### Comparison:
+1. Peak Power vs Current
+2. Peak Power at 25 mA
+3. Peak power at 50 mA
+4. Peak wavelength vs Current
+5. Peak wavelength vs Current with polynomial fits (R-squared included)
 
 ## LIV
 ### Individual Files:
 Saved to .mat:
 1. Voltage 
 2. Current
-3. Peak Power (single value)
-4. Current at peak power (single value)
-5. Voltage at peak power (single value)
-6. For each channel:
+3. Temperature
+4. Peak Power (single value)
+5. Current at peak power (single value)
+6. Voltage at peak power (single value)
+7. For each channel:
     - Threshold Current (single value)
     - Power in mW
     - Power in dBm
@@ -101,7 +107,18 @@ Plots:
     - LI Curve in dBm and in mW
     - 1st and 2nd derivatives of LI curve
 
-### Comparison:
+### Comparison Plots:
+Note: Data channel set manually, by default it is often either ch1 or ch2, but it is recommended that the user checks ALL plotting functions in multi_LIV to ensure the correct channel is prioritized. 
+1. Threshold of data channel (Bar)
+2. Threshold of data channel (box)
+3. Power at 25mA (in mW)
+4. Power at 25mA (in dBm)
+5. Power at 50mA (in mW)
+6. Power at 50mA (in dBm)
+7. Temperature vs Current
+8. VI Curves
+9. LI Curves
+
 
 ## WLM:
 ### Individual Files:
@@ -127,5 +144,6 @@ Plots:
     - LI Curve in dBm and in mW
 
 ### Comparison:
-
+1. Voltage vs Current (VI curves)
+2. Wavelength vs Current 
 
