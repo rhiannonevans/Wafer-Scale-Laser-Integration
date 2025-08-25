@@ -1,5 +1,5 @@
 # Wafer-Scale-Laser-Integration
-Intended for use with measurement .cvs of the following types and expected data:
+Intended for use with laser-characterization measurements (.cvs) of the following types and expected data:
 - Optical Spectrum Analysis (OSA): Sorted in sweeps (number unlimited), for each we record a single temperature and current, and an array of input wavelengths (swept over) and associated optical power outputs.
 - Power-Current-Voltage (LIV): Current, voltage, and temperature is all-inclusive, power is channel-specific (supports up to 4 channels).
 - Wavelength Meter (WLM): Identical to LIV, with the addition of wavelength (all-inclusve).
@@ -12,6 +12,8 @@ The scripts here are used for data analysis for on-chip laser characterization w
 - Use the extracted data of multiple devices to compare performance. 
 
 The system is automated, once the beginning prompts are completed the program will process as many files as you give it with no further user input.
+
+<b>User should only need to use main.py.<b>
 
 
 # FILE NAME FORMAT:
