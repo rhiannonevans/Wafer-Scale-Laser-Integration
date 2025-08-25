@@ -1,3 +1,6 @@
+
+<b><em>User should only need to use main.py.</em></b>
+
 # Wafer-Scale-Laser-Integration
 Intended for use with laser-characterization measurements (.cvs) of the following types and expected data:
 - Optical Spectrum Analysis (OSA): Sorted in sweeps (number unlimited), for each we record a single temperature and current, and an array of input wavelengths (swept over) and associated optical power outputs.
@@ -13,7 +16,6 @@ The scripts here are used for data analysis for on-chip laser characterization w
 
 The system is automated, once the beginning prompts are completed the program will process as many files as you give it with no further user input.
 
-<b><em>User should only need to use main.py.</em></b>
 
 
 # FILE NAME FORMAT:
