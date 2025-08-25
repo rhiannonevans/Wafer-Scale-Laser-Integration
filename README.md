@@ -49,7 +49,7 @@ Note: Format is case insensitive.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n: files will be processed unless an appropriate .mat can be found, in which case relevent data will be extracted &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from the .mat.
 
 5. On submission, the program will attempt to process the selected files as LIV, then as WLM, and finally as OSA.
-Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files not containing the type in their name ('liv', 'wlm', 'osa'). NOTE: A file will only be processed as LIV if the file name contains 'liv' and does NOT contain 'wlm' - all file names containing 'wlm' will be processed as WLM.
+Attempts to process yout selection as any type (LIV, WLM, OSA) will skip any files not containing the type in their name ('liv', 'wlm', 'osa'). NOTE: A file will only be processed as LIV if the file name contains 'liv' and does NOT contain 'wlm' - all file names containing 'wlm' will be processed as WLM.
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data is organized and saved to .mat, characteristic plots are generated and saved both as .png and as .svg. In the &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;terminal, you can monitor progress and/or terminate early using the CTRL+C command.
 
