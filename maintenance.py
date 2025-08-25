@@ -3,7 +3,7 @@ import os
 """ Useful script to clean all .csvs from data folders - useful to 'start from scratch' when processing data"""
 
 if __name__ == "__main__":
-    parent_path = r"C:\Users\OWNER\Downloads\LIV (4)\LIV"  # Change this to your target directory
+    parent_path = r"C:\Users\OWNER\Desktop\liv_data"  # Change this to your target directory
     for root, dirs, files in os.walk(parent_path):
         for file in files:
             file_path = os.path.join(root, file)

@@ -56,6 +56,7 @@ Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files
 
 
 # Data Characterization
+
 ## OSA:
 ### Individual Files:
 
@@ -63,6 +64,19 @@ Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files
 
 ## LIV
 ### Individual Files:
+Saved to .mat:
+1. Voltage 
+2. Current
+3. Peak Power (single value)
+4. Current at peak power (single value)
+5. Voltage at peak power (single value)
+6. For each channel:
+    - Threshold Current (single value)
+    - Power in mW
+    - Power in dBm
+
+
+Plots:
 1. IV Curve
 2. Differential Resistance vs Current
 3. For each channel:
