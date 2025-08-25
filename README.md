@@ -40,8 +40,8 @@ Note: Format is case insensitive.
 
 4. You will be asked to overwrite or skip existing files - these are files which have previously been processed (meaning a .mat file has been generated and can be found within the parent folder). 
 
-y: all files will be processed from scratch, existing .mat and any plots will be replaced. 
-n: for each file, if an appropriate .mat can be found, relevent data will be extracted from the .mat and the file will NOT be re-processed. 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y: all files will be processed from scratch, existing .mat and any plots will be replaced. 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n: for each file, if an appropriate .mat can be found, relevent data will be extracted from the .mat and the file will NOT be re-processed. 
 
 5. On submission, the program will attempt to process the selected files as LIV, then as WLM, and finally as OSA.
 Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files not containing the type in their name ('liv', 'wlm', 'osa'). NOTE: A file will only be processed as LIV if the file name contains 'liv' and does NOT contain 'wlm' - all file names containing 'wlm' will be processed as WLM.
