@@ -41,16 +41,16 @@ Note: Format is case insensitive.
 4. You will be asked to overwrite or skip existing files - these are files which have previously been processed (meaning a .mat file has been generated and can be found within the parent folder). 
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y: all files will be processed from scratch, existing .mat and any plots will be replaced.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n: files will be processed unless an appropriate .mat can be found, in which case relevent data will be extracted &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from the .mat.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n: files will be processed unless an appropriate .mat can be found, in which case relevent data will be extracted &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from the .mat.
 
 5. On submission, the program will attempt to process the selected files as LIV, then as WLM, and finally as OSA.
 Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files not containing the type in their name ('liv', 'wlm', 'osa'). NOTE: A file will only be processed as LIV if the file name contains 'liv' and does NOT contain 'wlm' - all file names containing 'wlm' will be processed as WLM.
 
-Data is organized and saved to .mat, characteristic plots are generated and saved both as .png and as .svg. In the terminal, you can monitor progress and/or terminate early using the CTRL+C command.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data is organized and saved to .mat, characteristic plots are generated and saved both as .png and as .svg. In the terminal, you can monitor progress and/or terminate early using the CTRL+C command.
 
 6. As the program processes each file, it will store a unique IDtag and certain data points depending on the file type. Once all files have been processed, these data points will be used to compare all selected files within a certain type. Thus, even if you select files of multiple types, they will be processed and compaired seperately (WLM is processed only as WLM, and compaired only to other WLM, and so on). 
 
-Comparison plots are generated and saved as both .png and as .svg.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Comparison plots are generated and saved as both .png and as .svg.
 
 
 
