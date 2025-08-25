@@ -1,17 +1,20 @@
 # Wafer-Scale-Laser-Integration
-The scripts here are used for data analysis for on-chip laser measurements with the following primary functionality:
-- extract different kinds of data (OSA, LIV, benchtop, etc) in csv files and save in .mat with certain plots
-- analyze multiple OSA data
-- analyze multiple LIV and wavelength meter data
-- compare between benchtop and on-chip laser measurements
+Intended for use with measurement .cvs of the following types and expected data:
+- Optical Spectrum Analysis (OSA): 1+ Sweeps, for each we record a single temperature and current, an array of input wavelengths (swept over) and associated optical power output
+- Power-Current-Voltage (LIV)
+- Wavelength Meter (WLM): Identical to LIV, with the addition of wavelength and temperature readings for each datapoint.
+
+    
+
+The scripts here are used for data analysis for on-chip laser characterization with the following primary functionality:
+- extract and organize data from the Scylla station in Lab 4060 (LC group)
+- Visualize and save data for each measurement
+- Use the extracted data of multiple devices to compare performance. 
+
+The system is automated, once the beginning prompts are completed the program will process as many files as you give it with no further user input.
 
 
-# USER INFO
-
-For producing data plots from wavelength metre [LIV (+ Wavelength)] and OSA from CSV. Capable of processing files individually and producing comparison plots for multiple files.
-
-
-## FILE NAME FORMAT:
+# FILE NAME FORMAT:
 Starred items (*) are required, the rest are recommended.<br><br>
 (item = example)<br>
 
@@ -29,7 +32,7 @@ Example: "anything123_LIV_1310nm_Chip27_R5_clad_iter90.csv"
 
 Note: Format is case insensitive.
 
-## USE GUIDE:
+# USE GUIDE:
 1. Run main.py
 
 2. You will be prompted to select a folder. Select the parent folder containing the file(s) to be processed and submit.
