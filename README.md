@@ -63,6 +63,11 @@ Attempts to process a given file as any type (LIV, WLM, OSA) will skip any files
 
 ## LIV
 ### Individual Files:
+1. IV Curve
+2. Differential Resistance vs Current
+3. For each channel:
+    - LI Curve in dBm and in mW
+    - 1st and 2nd derivatives of LI curve
 
 ### Comparison:
 
