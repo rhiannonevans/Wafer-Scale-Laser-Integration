@@ -13,7 +13,7 @@ The scripts here are used for data analysis for on-chip laser characterization w
 
 The system is automated, once the beginning prompts are completed the program will process as many files as you give it with no further user input.
 
-<b>User should only need to use main.py.<b>
+<i><b>User should only need to use main.py.<b><i>
 
 
 # FILE NAME FORMAT:
