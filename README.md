@@ -1,5 +1,19 @@
 
 <b><em>User should only need to use main.py.</em></b>
+# Critical Files
+Do not delete under any circumstances:
+- main.py
+- OSAclass.py
+- LIVclass.py
+- WLMclass.py
+- multi_osa.py
+- mutli_LIV.py
+- multi_wlm.py
+- multi_select.py
+- threshold.py
+
+Useful files for future development:
+- maintenance.py (clears the folder and subfolders of all files, except the raw measurement .csvs)
 
 # Wafer-Scale-Laser-Integration
 Intended for use with laser-characterization measurements (.cvs) of the following types and expected data:
@@ -151,17 +165,3 @@ Plots:
 1. Voltage vs Current (VI curves)
 2. Wavelength vs Current 
 
-# Critical Files
-Do not delete under any circumstances:
-- main.py
-- OSAclass.py
-- LIVclass.py
-- WLMclass.py
-- multi_osa.py
-- mutli_LIV.py
-- multi_wlm.py
-- multi_select.py
-- threshold.py
-
-Useful files for future development:
-- maintenance.py (clears the folder and subfolders of all files, except the raw measurement .csvs)
