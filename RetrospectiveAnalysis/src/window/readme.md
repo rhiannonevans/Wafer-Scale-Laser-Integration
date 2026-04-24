@@ -1,3 +1,0 @@
-# Window
-
-PySide Window

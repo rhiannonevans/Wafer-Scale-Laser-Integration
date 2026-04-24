@@ -1,3 +1,0 @@
-# utils
-
-Simple helper tools.
