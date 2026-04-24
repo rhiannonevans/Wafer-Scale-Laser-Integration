@@ -1,0 +1,17 @@
+Beeswarm Plot Summary
+============================================================
+Processed files for beeswarm plots:
+  Chip ID: ChipD30_R4, Wavelength: 1330nm, File: 2025_10_30_23_50_59_cycle01_run01_LIV\2025_10_30_23_50_59_C01_R01_LIV_1330nm_ChipD30_R4\2025_10_30_23_50_59_C01_R01_LIV_1330nm_ChipD30_R4.csv
+
+Number of files processed for each wavelength:
+  1310nm: 0
+  1330nm: 1
+  1550nm: 0
+  other: 0
+
+Plotted chip IDs (threshold):
+
+Plotted chip IDs (voltage):
+
+Not plotted (missing/NaN values):
+  ChipD30_R4

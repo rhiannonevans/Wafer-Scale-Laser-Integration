@@ -58,9 +58,55 @@ def fit_idvdi(I,V, base_name=None, save_dir=None):
 
     return
 
-def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
+def calculate_slope_efficiency(I, power_mW, threshold_current):
+    """
+    Calculate slope efficiency from threshold current to maximum current.
+    
+    Parameters:
+    -----------
+    I : array-like
+        Current values in mA
+    power_mW : array-like
+        Power values in mW
+    threshold_current : float
+        Threshold current in mA
+    
+    Returns:
+    --------
+    slope_efficiency : float
+        Slope efficiency in mW/mA
+    I_fit : array
+        Current values used for fit
+    power_fit : array
+        Power values used for fit
+    fit_line : array
+        Linear fit line values
+    """
+    if threshold_current is None or np.isnan(threshold_current):
+        return None, None, None, None
+    
+    # Select data from threshold to max current
+    mask = I >= threshold_current
+    I_fit = I[mask]
+    power_fit = power_mW[mask]
+    
+    if len(I_fit) < 2:
+        return None, None, None, None
+    
+    # Linear fit: power = slope * current + intercept
+    coeffs = np.polyfit(I_fit, power_fit, 1)
+    slope_efficiency = coeffs[0]  # mW/mA
+    intercept = coeffs[1]
+    
+    # Generate fit line for plotting
+    fit_line = slope_efficiency * I_fit + intercept
+    
+    return slope_efficiency, I_fit, power_fit, fit_line
 
-    L=np.log(channel)
+
+def run_liv(I, channel, base_name=None, save_dir=None, ch_i=1, V=None):
+
+    L=10.0*np.log10(channel)
     #print(I)
 
     # Mask for 4 < I < 20 mA
@@ -79,6 +125,8 @@ def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
         print("Warning: Current starts at or above 20mA, skipping threshold analysis.")
         threshold_current_1st = None
         threshold_current_2nd = None
+        slope_efficiency = None
+        voltage_param = None
     else:
         threshold_idx_2nd = np.argmax(d2)
         threshold_current_2nd = I_d2.iloc[threshold_idx_2nd]
@@ -86,6 +134,29 @@ def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
         threshold_idx_1st = np.argmax(np.abs(d1))
         threshold_current_1st = I_d1.iloc[threshold_idx_1st]
         print(f"Maximum jump (first derivative max) at I = {threshold_current_1st:.3f} mA")
+        
+        # Calculate slope efficiency
+        slope_efficiency, I_fit, power_fit, fit_line = calculate_slope_efficiency(
+            I, channel, threshold_current_2nd
+        )
+        if slope_efficiency is not None:
+            print(f"Slope efficiency: {slope_efficiency:.4f} mW/mA")
+        
+        # Calculate voltage parameter based on filename
+        voltage_param = None
+        if V is not None:
+            if base_name is not None and '1550' in base_name:
+                # For 1550nm: use max voltage
+                voltage_param = V.max()
+                print(f"Max voltage (1550nm): {voltage_param:.3f} V")
+            else:
+                # For other wavelengths: voltage at threshold + 30mA
+                target_current = threshold_current_2nd + 30.0
+                # Find closest current value
+                idx = (np.abs(I - target_current)).argmin()
+                voltage_param = V.iloc[idx]
+                actual_current = I.iloc[idx]
+                print(f"Voltage at I={actual_current:.2f}mA (Ith+30mA): {voltage_param:.3f} V")
     
 
 
@@ -158,17 +229,29 @@ def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
         # Plot LI (LOG) curve in dBm
         ax2.plot(I, L, marker='o', label='Power (dBm)')
         if threshold_current_2nd is not None:
-            ax2.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+            ax2.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Threshold: {threshold_current_2nd:.2f} mA')
         ax2.set_xlabel("Current (mA)")
         ax2.set_ylabel("Power (dBm)")
         ax2.set_title(f"Ch {ch_i}: Power (dBm) vs Current (mA)")
         ax2.legend()
         ax2.grid(True)
 
-        # Plot LI curve in mW
-        ax3.plot(I, channel, marker='o', label='Power (mW)')
+        # Plot LI curve in mW with slope efficiency fit
+        ax3.plot(I, channel, marker='o', label='Power (mW)', alpha=0.7)
         if threshold_current_2nd is not None:
-            ax3.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+            ax3.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Threshold: {threshold_current_2nd:.2f} mA')
+        
+        # Add slope efficiency fit line
+        if slope_efficiency is not None and I_fit is not None and fit_line is not None:
+            ax3.plot(I_fit, fit_line, 'g--', linewidth=2, label=f'Linear fit: η={slope_efficiency:.4f} mW/mA')
+            # Add annotation
+            mid_idx = len(I_fit) // 2
+            ax3.annotate(f'η = {slope_efficiency:.4f} mW/mA', 
+                        xy=(I_fit.iloc[mid_idx], fit_line[mid_idx]),
+                        xytext=(10, 10), textcoords='offset points',
+                        fontsize=9, color='green',
+                        bbox=dict(boxstyle='round,pad=0.5', facecolor='yellow', alpha=0.3))
+        
         ax3.set_xlabel("Current (mA)")
         ax3.set_ylabel("Power (mW)")
         ax3.set_title(f"Ch {ch_i}: Power (mW) vs Current (mA)")
@@ -202,21 +285,26 @@ def run_liv(I,channel, base_name=None, save_dir=None, ch_i = 1):
         plt.legend()
         plt.grid(True)
 
-        # Plot Power (mW) vs Current with both thresholds
+        # Plot Power (mW) vs Current with both thresholds and slope efficiency
         L1 = channel
         fig4 = plt.figure(figsize=(8, 6))
-        plt.plot(I, L1, marker='o', label='Power (mW)')
+        plt.plot(I, L1, marker='o', label='Power (mW)', alpha=0.7)
         if threshold_current_2nd is not None:
-            plt.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Second Deriv. Max at {threshold_current_2nd:.2f} mA')
+            plt.axvline(threshold_current_2nd, color='red', linestyle='--', label=f'Threshold: {threshold_current_2nd:.2f} mA')
         if threshold_current_1st is not None:
             plt.axvline(threshold_current_1st, color='blue', linestyle='--', label=f'First Deriv. Max at {threshold_current_1st:.2f} mA')
+        
+        # Add slope efficiency fit
+        if slope_efficiency is not None and I_fit is not None and fit_line is not None:
+            plt.plot(I_fit, fit_line, 'g--', linewidth=2, label=f'Slope eff: η={slope_efficiency:.4f} mW/mA')
+        
         plt.xlabel("Current (mA)")
         plt.ylabel("Power (mW)")
         plt.title("LIV (mW)")
         plt.legend()
         plt.grid(True)
 
-    return threshold_current_2nd
+    return threshold_current_2nd, slope_efficiency, voltage_param
 
 def main():
     print("Starting trend detection...")
@@ -279,7 +367,7 @@ def main():
                 continue
             #print(f"Channel {i} Data:")
 
-            threshold = run_liv(current, voltage, channel)
+            threshold, slope_eff, voltage_val = run_liv(current, channel, path.split('/')[-1], None, i, voltage)
 
             #thresh_I = fit_guess(current, channel)
 

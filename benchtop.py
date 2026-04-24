@@ -15,6 +15,7 @@ from tkinter import filedialog
 def process_benchtop(file_path_str, output_folder=None, convert_to_mW=False):
     # Expand the file path and determine the base name and location
     file_path = os.path.expanduser(file_path_str)
+    file_path = os.path.normpath(file_path)  # Normalize path separators
     base_name = os.path.splitext(os.path.basename(file_path))[0]
     file_loc = os.path.dirname(file_path)
     print(f"Looking for the file at: {file_path}")
@@ -22,17 +23,16 @@ def process_benchtop(file_path_str, output_folder=None, convert_to_mW=False):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist. Please check the file path.")
 
-    # Load the CSV file
+    # Load the CSV file3
     df = pd.read_csv(file_path, header=None, on_bad_lines="skip", engine="python", skiprows=16)
 
-    # Define search terms for each target row
-    search_terms = {
-        "wavelength": "wavelength",  # Update to match the actual label in the CSV
-        "channel_1": "channel_1" ,    # Update to match the actual label in the CSV
-        "channel_2": "channel_2",    # Update to match the actual label in the CSV
-        "channel_3": "channel_3",   # Update to match the actual label in the CSV
-        "channel_4": "channel_4",   # Update to match the actual label in the CSV
-    }
+    # Define search terms - wavelength and dynamically detect channels
+    search_terms = {"wavelength": "wavelength"}
+    
+    # Dynamically add channel search terms (support channel_0 and channels 1-8)
+    search_terms["channel_0"] = "channel_0"  # In case channel_0 exists in CSV
+    for i in range(1, 9):  # Check for channel_1 through channel_8
+        search_terms[f"channel_{i}"] = f"channel_{i}"
 
     # Find indices where these terms occur
     indices = {}
@@ -61,19 +61,13 @@ def process_benchtop(file_path_str, output_folder=None, convert_to_mW=False):
 
         # Extract channel data
         try:
-            # Dynamically determine the maximum channel number
-            max_channel = max(
-                int(key.split('_')[1]) for key in indices.keys() if key.startswith("channel_") and indices[key] is not None
-            )
-
+            # Dynamically determine available channels
             channels = {}
-            for i in range(1, max_channel + 1):  # Dynamically adjust the range
-                ch_key = f"channel_{i}"
-                if indices[ch_key] is not None:
-                    print(f"Channel {i} row content: {df.loc[indices[ch_key]]}")  # Debugging
-                    channels[ch_key] = pd.to_numeric(df.loc[indices[ch_key]], errors='coerce')
-                else:
-                    channels[ch_key] = None
+            for key in indices.keys():
+                if key.startswith("channel_") and indices[key] is not None:
+                    ch_num = int(key.split('_')[1])
+                    print(f"Channel {ch_num} row content: {df.loc[indices[key]]}")  # Debugging
+                    channels[key] = pd.to_numeric(df.loc[indices[key]], errors='coerce')
 
         except Exception as e:
             print(f"Error extracting channel data: {str(e)}")
@@ -96,6 +90,11 @@ def process_benchtop(file_path_str, output_folder=None, convert_to_mW=False):
         # Save the data dictionary to a .mat file in the output folder
         if output_folder is None:
             output_folder = file_loc  # Use the parent folder if no output folder is specified
+        
+        output_folder = os.path.normpath(output_folder)  # Normalize path separators
+        
+        # Ensure output folder exists
+        os.makedirs(output_folder, exist_ok=True)
 
         mat_filename = base_name + "_data.mat"
         save_path_mat = os.path.join(output_folder, mat_filename)

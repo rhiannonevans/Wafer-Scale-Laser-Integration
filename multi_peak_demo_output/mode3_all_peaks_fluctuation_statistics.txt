@@ -1,0 +1,44 @@
+FLUCTUATION ANALYSIS STATISTICS
+============================================================
+
+ANALYSIS SETTINGS:
+  Peak Detection Mode: all
+  Prominence Threshold: 10.0% of max power
+
+MULTI-PEAK DETECTION SUMMARY:
+  Average # of peaks:  2.0
+  Std Dev # of peaks:  0.00
+  Min # of peaks:      2
+  Max # of peaks:      2
+  (Statistics below are for most prominent peak at each time)
+
+PEAK WAVELENGTH STATISTICS:
+  Mean:              1330.532843 nm
+  Std Deviation:     0.196369 nm
+  Min:               1330.294314 nm
+  Max:               1330.705686 nm
+  Range:             0.411371 nm
+  Total Drift:       0.003344 nm
+
+WAVELENGTH DRIFT FROM INITIAL (Δλ):
+  Initial λ:         1330.702341 nm
+  Std Deviation:     196.369 pm
+  Max |Δλ|:          408.027 pm
+  Final Δλ:          3.344 pm
+  (Note: Positive = red shift, Negative = blue shift)
+
+PEAK POWER STATISTICS:
+  Mean:              2.495010 mW
+  Std Deviation:     0.237155 mW
+  Min:               2.073425 mW
+  Max:               2.966534 mW
+  Range:             0.893109 mW
+  CV (Coeff. Var.):  9.505 %
+
+AVERAGE POWER STATISTICS:
+  Mean:              0.286632 mW
+  Std Deviation:     0.008510 mW
+  Min:               0.263746 mW
+  Max:               0.301455 mW
+  Range:             0.037709 mW
+  CV (Coeff. Var.):  2.969 %

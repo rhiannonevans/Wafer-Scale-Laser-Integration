@@ -1,0 +1,678 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>RA-Core Developer Guide</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Custom JS scripts for mdbook-pdf PDF generation -->
+        <script type='text/javascript'>
+            let markAllContentHasLoadedForPrinting = () =>
+                window.setTimeout(
+                    () => {
+                        let p = document.createElement('div');
+                        p.setAttribute('id', 'content-has-all-loaded-for-mdbook-pdf-generation');
+                        document.body.appendChild(p);
+                    }, 100
+                );
+
+            window.addEventListener('load', () => {
+                // Expand all the <details> elements for printing.
+                r = document.getElementsByTagName('details');
+                for (let i of r)
+                    i.open = true;
+
+                try {
+                    MathJax.Hub.Register.StartupHook('End', markAllContentHasLoadedForPrinting);
+                } catch (e) {
+                    markAllContentHasLoadedForPrinting();
+                }
+            });
+        </script>
+    <div style="display: none"><a href="#introduction">introduction</a><a href="#prerequisite">prerequisite</a><a href="#theory-curve_fitting-curve_fitting">theory-curve_fitting-curve_fitting</a><a href="#theory-curve_fitting-peak_finding">theory-curve_fitting-peak_finding</a><a href="#theory-curve_fitting-lorentzian_peak_function">theory-curve_fitting-lorentzian_peak_function</a><a href="#theory-curve_fitting-dbm_scale_to_linear_scale">theory-curve_fitting-dbm_scale_to_linear_scale</a><a href="#theory-curve_fitting-extinction_ratio">theory-curve_fitting-extinction_ratio</a><a href="#theory-curve_fitting-quality_factor">theory-curve_fitting-quality_factor</a><a href="#theory-high_dimensional_distance-high_dimensional_distance">theory-high_dimensional_distance-high_dimensional_distance</a><a href="#theory-peak_tracking-peak_tracking">theory-peak_tracking-peak_tracking</a><a href="#theory-peak_tracking-peak_representation">theory-peak_tracking-peak_representation</a><a href="#theory-peak_tracking-ragged_array">theory-peak_tracking-ragged_array</a><a href="#theory-peak_tracking-graph">theory-peak_tracking-graph</a><a href="#theory-construct_adjacency_matrix">theory-construct_adjacency_matrix</a><a href="#theory-path_finding">theory-path_finding</a><a href="#theory-lti_equalization-lti_equalization_method">theory-lti_equalization-lti_equalization_method</a><a href="#theory-lti_equalization-simplified_heat_transfer_model">theory-lti_equalization-simplified_heat_transfer_model</a><a href="#theory-lti_equalization-general_system_block_diagram">theory-lti_equalization-general_system_block_diagram</a><a href="#theory-lti_equalization-equalization_process">theory-lti_equalization-equalization_process</a><a href="#python_tricks-formatter">python_tricks-formatter</a><a href="#python_tricks-type_hint">python_tricks-type_hint</a><a href="#python_tricks-functional_programming">python_tricks-functional_programming</a><a href="#python_tricks-oop">python_tricks-oop</a><a href="#python_tricks-dataclass">python_tricks-dataclass</a><a href="#python_tricks-misc">python_tricks-misc</a><a href="#api_reference-lib">api_reference-lib</a><a href="#api_reference-passive_tools">api_reference-passive_tools</a><a href="#api_reference-active_tools">api_reference-active_tools</a><a href="#api_reference-utils-utils">api_reference-utils-utils</a><a href="#api_reference-utils-ragged_array">api_reference-utils-ragged_array</a><a href="#api_reference-utils-tqdm_qt">api_reference-utils-tqdm_qt</a><a href="#versions">versions</a></div>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><a href="prerequisite.html">Prerequisite</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><li class="part-title">Theory</li><li class="chapter-item expanded "><a href="theory/curve_fitting/curve_fitting.html"><strong aria-hidden="true">1.</strong> Curve Fitting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="theory/curve_fitting/peak_finding.html"><strong aria-hidden="true">1.1.</strong> Peak Finding</a></li><li class="chapter-item expanded "><a href="theory/curve_fitting/lorentzian_peak_function.html"><strong aria-hidden="true">1.2.</strong> Lorentzian Peak Function Fitting</a></li><li class="chapter-item expanded "><a href="theory/curve_fitting/dbm_scale_to_linear_scale.html"><strong aria-hidden="true">1.3.</strong> dBm Scale to Linear Scale</a></li><li class="chapter-item expanded "><a href="theory/curve_fitting/extinction_ratio.html"><strong aria-hidden="true">1.4.</strong> Extinction Ratio</a></li><li class="chapter-item expanded "><a href="theory/curve_fitting/quality_factor.html"><strong aria-hidden="true">1.5.</strong> Quality Factor</a></li></ol></li><li class="chapter-item expanded "><a href="theory/high_dimensional_distance/high_dimensional_distance.html"><strong aria-hidden="true">2.</strong> High Dimensional Distance</a></li><li class="chapter-item expanded "><a href="theory/peak_tracking/peak_tracking.html"><strong aria-hidden="true">3.</strong> Peak Tracking</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="theory/peak_tracking/peak_representation.html"><strong aria-hidden="true">3.1.</strong> Peak Representation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="theory/peak_tracking/ragged_array.html"><strong aria-hidden="true">3.1.1.</strong> Ragged Array</a></li><li class="chapter-item expanded "><a href="theory/peak_tracking/graph.html"><strong aria-hidden="true">3.1.2.</strong> Graph</a></li></ol></li><li class="chapter-item expanded "><a href="theory/construct_adjacency_matrix.html"><strong aria-hidden="true">3.2.</strong> Construct Adjacency Matrix</a></li><li class="chapter-item expanded "><a href="theory/path_finding.html"><strong aria-hidden="true">3.3.</strong> Path Finding</a></li></ol></li><li class="chapter-item expanded "><a href="theory/lti_equalization/lti_equalization_method.html"><strong aria-hidden="true">4.</strong> LTI Equalization Method</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="theory/lti_equalization/simplified_heat_transfer_model.html"><strong aria-hidden="true">4.1.</strong> Simplified Heat Transfer Model</a></li><li class="chapter-item expanded "><a href="theory/lti_equalization/general_system_block_diagram.html"><strong aria-hidden="true">4.2.</strong> General System Block Diagram</a></li><li class="chapter-item expanded "><a href="theory/lti_equalization/equalization_process.html"><strong aria-hidden="true">4.3.</strong> Equalization Process</a></li><li class="spacer"></li></ol></li><li class="chapter-item expanded "><li class="part-title">Python Tricks</li><li class="chapter-item expanded "><a href="python_tricks/formatter.html"><strong aria-hidden="true">5.</strong> Formatter</a></li><li class="chapter-item expanded "><a href="python_tricks/type_hint.html"><strong aria-hidden="true">6.</strong> Type Hint</a></li><li class="chapter-item expanded "><a href="python_tricks/functional_programming.html"><strong aria-hidden="true">7.</strong> Functional Programming</a></li><li class="chapter-item expanded "><a href="python_tricks/oop.html"><strong aria-hidden="true">8.</strong> OOP</a></li><li class="chapter-item expanded "><a href="python_tricks/dataclass.html"><strong aria-hidden="true">9.</strong> @dataclass</a></li><li class="chapter-item expanded "><a href="python_tricks/misc.html"><strong aria-hidden="true">10.</strong> Misc</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><li class="part-title">API Reference</li><li class="chapter-item expanded "><a href="api_reference/lib.html"><strong aria-hidden="true">11.</strong> lib.py</a></li><li class="chapter-item expanded "><a href="api_reference/passive_tools.html"><strong aria-hidden="true">12.</strong> passive_tools.py</a></li><li class="chapter-item expanded "><a href="api_reference/active_tools.html"><strong aria-hidden="true">13.</strong> active_tools.py</a></li><li class="chapter-item expanded "><a href="api_reference/utils/utils.html"><strong aria-hidden="true">14.</strong> utils</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="api_reference/utils/ragged_array.html"><strong aria-hidden="true">14.1.</strong> ragged_array.py</a></li><li class="chapter-item expanded "><a href="api_reference/utils/tqdm_qt.html"><strong aria-hidden="true">14.2.</strong> tqdm_qt.py</a></li><li class="spacer"></li></ol></li><li class="chapter-item expanded "><a href="versions.html">Versions</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">RA-Core Developer Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>This is the developer guide for <code>RA-Core</code>. Aims to provide additional information on the data analysis background of the problem and share some Python tricks for new developers.</p>
+<h2 id="retrospective-analysis"><a class="header" href="#retrospective-analysis">Retrospective Analysis</a></h2>
+<p><code>RA-Core</code> library is the core data analysis library in the <code>Retrospective Analysis</code> software bundle.</p>
+<h3 id="cli-version"><a class="header" href="#cli-version">CLI Version</a></h3>
+<p>The very first and simple version was a CLI script from March 2021, maybe from Michael Caverley and Eric Lyall (from 2015-2021). It was then maintained by <a href="https://github.com/samanthagrist">Samantha M. Grist</a> until November 2021. See its <a href="https://github.com/SiEPIC/biosensors/commits/24538a2484b15e0f183e6f898d4421238fa2dcf0/RetrospectiveAnalysis/Retrospective_Analysis_Script.py">git history</a>.</p>
+<h3 id="ra-gui"><a class="header" href="#ra-gui">RA-GUI</a></h3>
+<p>The first GUI version of RA was developed by <a href="https://github.com/EzekielDaun">Yifei Liu</a> in 2022 summer and maintained until August 2023. See <a href="https://github.com/SiEPIC/biosensors/tree/f711a1501a7c1c2128a45eef7c6e91330f4c2fef/RetrospectiveAnalysis">its code base as of 20230830</a>.</p>
+<p>The abbreviation <code>RA</code> means this version.</p>
+<p>Beginning in September 2023, <a href="https://github.com/piramonpan">Piramon Tisapramotkul</a> will be the maintainer of <code>RA-GUI</code>.</p>
+<h2 id="about-this-guide"><a class="header" href="#about-this-guide">About This Guide</a></h2>
+<h3 id="theory"><a class="header" href="#theory">Theory</a></h3>
+<p>This is the theory background behind RA-Core. It is pretty much duplicated with <a href="https://drive.google.com/drive/folders/1MAbDSM9rbL6HprSjykqKY7wOVgX7tuFi?usp=drive_link">Yifei's end-of-term presentation</a>.</p>
+<h3 id="python-tricks"><a class="header" href="#python-tricks">Python Tricks</a></h3>
+<p>This section shares some Python tricks used in RA-Core development.</p>
+<h3 id="api-reference"><a class="header" href="#api-reference">API Reference</a></h3>
+<p>This section describes the use of the core APIs of RA-Core.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="prerequisite"><a class="header" href="#prerequisite">Prerequisite</a></h1>
+<p>The maintainer of RA-Core needs to have the following skills:</p>
+<ul>
+<li>Programming Language and Tools
+<ul>
+<li><input disabled="" type="checkbox"/>
+The Python Programming Language</li>
+<li><input disabled="" type="checkbox"/>
+Python Virtual Environment</li>
+<li><input disabled="" type="checkbox"/>
+Proficient in a Python IDE (Preferred <a href="https://code.visualstudio.com/">Visual Studio Code</a> or <a href="https://www.jetbrains.com/pycharm/">PyCharm</a>)</li>
+<li><input disabled="" type="checkbox"/>
+Basic Debugging and Troubleshooting Skills</li>
+<li><input disabled="" type="checkbox"/>
+Basic Concepts of Object-Oriented-Programming (OOP) and OOP in Python</li>
+<li><input disabled="" type="checkbox"/>
+Basic Idea of Data Structure</li>
+<li><input disabled="" type="checkbox"/>
+Basic Idea of Concurrent Programming</li>
+<li><input disabled="" type="checkbox"/>
+Git</li>
+<li><input disabled="" type="checkbox"/>
+Markdown Syntax</li>
+</ul>
+</li>
+<li>Math
+<ul>
+<li><input disabled="" type="checkbox"/>
+Basic Concepts of Linear Algebra</li>
+<li><input disabled="" type="checkbox"/>
+Basic Concepts of Linear System</li>
+<li><input disabled="" type="checkbox"/>
+High-School Math</li>
+</ul>
+</li>
+<li>Physics
+<ul>
+<li><input disabled="" type="checkbox"/>
+Basic Circuit Theory</li>
+<li><input disabled="" type="checkbox"/>
+Basic Conductive Heat Transfer</li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="curve-fitting"><a class="header" href="#curve-fitting">Curve Fitting</a></h1>
+<p>The curve fitting process is consisted of 2 parts:</p>
+<ol>
+<li>Find peak locations using <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks">scipy.signal.find_peaks</a></li>
+<li>Lorentzian curve fitting using <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html#scipy.optimize.curve_fit">scipy.optimize.curve_fit</a></li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="peak-finding"><a class="header" href="#peak-finding">Peak Finding</a></h1>
+<p><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks">scipy.signal.find_peaks</a></p>
+<pre><code class="language-python">peaks, properties = find_peaks(x, height=0)
+</code></pre>
+<p>The important entries in returned properties that can help decide the curve fitting range are:</p>
+<blockquote>
+<ul>
+<li>
+<p>‘prominences’, ‘right_bases’, ‘left_bases’</p>
+<p>If prominence is given, these keys are accessible. See <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.peak_prominences.html#scipy.signal.peak_prominences">peak_prominences</a> for a description of their content.</p>
+</li>
+</ul>
+</blockquote>
+<h2 id="preprocessing"><a class="header" href="#preprocessing">Preprocessing</a></h2>
+<p>In practice, we find out some smoothing on the raw data before <code>find_peaks</code> can reduce the chance of finding noises as peaks.</p>
+<h2 id="bases-and-prominence"><a class="header" href="#bases-and-prominence">Bases and Prominence</a></h2>
+<p>Visualization of prominence from <a href="https://www.mathworks.com/help/signal/ug/prominence.html">MATLAB documentation</a>:</p>
+<p><img src="https://www.mathworks.com/help/signal/ug/peaksnolines.png" alt="prominence" /></p>
+<p>The bases of a peak with large prominence may fully contain some other small peaks. Take care when using this information in specifying the fitting range in later steps.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="lorentzian-peak-function-fitting"><a class="header" href="#lorentzian-peak-function-fitting">Lorentzian Peak Function Fitting</a></h1>
+<h2 id="lorentzian-function"><a class="header" href="#lorentzian-function">Lorentzian Function</a></h2>
+<p>$$
+f(x_0,y_0,I,\gamma) = y_0 + I \cdot \frac{\frac{\gamma}{2}^2}{\frac{\gamma}{2}^2 + (x-x_0)^2}
+$$</p>
+<p><a href="https://www.desmos.com/calculator/cysy3xftbw">Desmos Playground</a></p>
+<h2 id="sloped-lorentzian-function"><a class="header" href="#sloped-lorentzian-function">Sloped Lorentzian Function</a></h2>
+<p>$$
+f(x_0,y_0,I,\gamma,a) = y_0 + I \cdot \frac{\frac{\gamma}{2}^2}{\frac{\gamma}{2}^2 + (x-x_0)^2} + a(x-x_0)
+$$</p>
+<p><a href="https://www.desmos.com/calculator/bwk3fmqwdm">Desmos Playground</a></p>
+<h2 id="curve-fitting-1"><a class="header" href="#curve-fitting-1">Curve Fitting</a></h2>
+<p>The use of <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html#scipy.optimize.curve_fit">scipy.optimize.curve_fit</a> is directly from the <a href="https://github.com/SiEPIC/biosensors/blob/d89d08ba2ae25af1e3d65ec46948ad4c32c7085f/RetrospectiveAnalysis/MultiLorentzianFit.py#L90C4-L90C4">legacy CLI RA script</a>.</p>
+<p>Basically, just specify initial guesses and bounds.</p>
+<p>Note that initial guesses will not only affect the executing time but may also cause fitting failure (will raise an error like &quot;exceed maximum iteration&quot;).</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="dbm-scale-to-linear-scale"><a class="header" href="#dbm-scale-to-linear-scale">dBm Scale to Linear Scale</a></h1>
+<p>$$
+\text{value in linear scale} = 10^{\frac{\text{value in dBm scale}}{10}}
+$$</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="extinction-ratio"><a class="header" href="#extinction-ratio">Extinction Ratio</a></h1>
+<p>The Extinction Ratio (ER) is defined as the peak height <strong>in dBm scale</strong>.</p>
+<p>$$
+\text{ER} \equiv I
+$$</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="quality-factor"><a class="header" href="#quality-factor">Quality Factor</a></h1>
+<p>The quality factor is defined by the ratio of the peak central wavelength, and the peak width at half maximum peak height (Full Width at Half Maximum, FWHM) in <strong>linear scale</strong>.</p>
+<p>$$
+Q \equiv \frac{x_0}{\gamma \text{ fitted in linear scale}}
+$$</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="high-dimensional-distance"><a class="header" href="#high-dimensional-distance">High Dimensional Distance</a></h1>
+<p>See the available options in <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html">scipy.spatial.distance.cdist</a>, or define your own distance metric.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="peak-tracking"><a class="header" href="#peak-tracking">Peak Tracking</a></h1>
+<p>Peak Tracking is tracking the peak central wavelength shift over time (over #sweep).</p>
+<p>Because of the FSR feature of the resonator, the trace can be out of the sweep range.</p>
+<p><img src="theory/peak_tracking/./image/overview.png" alt="" /></p>
+<p>Usually, the read dataset contains noises or unavailable peaks. The algorithm can:</p>
+<ul>
+<li>Compute the full-length overall peak shift trace;</li>
+<li>Or, compute a few trace sections, and decide their relative position later.</li>
+</ul>
+<p><img src="theory/peak_tracking/./image/bad_spectrogram.png" alt="" /></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="peak-representation"><a class="header" href="#peak-representation">Peak Representation</a></h1>
+<p>In curve fitting, we already have the 5D vector form of peak representation. This section describes the data structure to store all the peaks in an experiment.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="ragged-array"><a class="header" href="#ragged-array">Ragged Array</a></h1>
+<p><img src="theory/peak_tracking/./image/ragged_array.png" alt="" /></p>
+<p>The ragged array representation uses two subscripts to locate a peak.</p>
+<pre><code class="language-python">peak = ragged_array[sweep_index][peak_index_in_sweep]
+</code></pre>
+<p>Notice that some sweeps may have no peaks at all.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="graph"><a class="header" href="#graph">Graph</a></h1>
+<p><img src="theory/peak_tracking/./image/graph.png" alt="" /></p>
+<p>There are actually two parts in the graph representation:</p>
+<ol>
+<li>A 1D array storing all the peak vectors.</li>
+<li>A 2D array (adjacency matrix) storing all the peak connections.</li>
+</ol>
+<p>The graph 1D array uses a single subscript to locate a peak.</p>
+<pre><code class="language-python">peak = graph_1d_array[index]
+</code></pre>
+<p>The graph 2D adjacency matrix uses two subscripts to describe the connection between two peaks.</p>
+<pre><code class="language-python">connection = adjacency_matrix[peak1_index][peak2_index] # the cost from peak1 to peak2
+connection = adjacency_matrix[peak2_index][peak1_index] # the cost from peak2 to peak1, if connection is directed
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="construct-adjacency-matrix"><a class="header" href="#construct-adjacency-matrix">Construct Adjacency Matrix</a></h1>
+<p>How the adjacency matrix is constructed will directly affect the path finding result.</p>
+<h2 id="a-simple-idea"><a class="header" href="#a-simple-idea">A Simple Idea</a></h2>
+<p>One simple idea is to only build connections for a pair of peaks between two adjacent sweeps.</p>
+<pre><code class="language-python"># demo pseudo-code
+from itertools import pairwise, product
+
+for sweep1,sweep2 in pairwise(ragged_array):
+    for peak1,peak2 in product(sweep1,sweep2):
+        adjacency_matrix[index_of(peak1)][index_of(peak2)] = cost_function(peak1,peak2)
+</code></pre>
+<p>Notice that in the above example, if a sweep has no peak, there will be no connections between the sweep before the no-peak sweep and the sweep after the no-peak sweep.</p>
+<h2 id="scipysparse"><a class="header" href="#scipysparse"><a href="https://docs.scipy.org/doc/scipy/reference/sparse.html"><code>scipy.sparse</code></a></a></h2>
+<p><code>scipy</code> uses sparse a matrix to store an adjacency matrix. In such <code>scipy</code> sparse matrix, assigning a value of 0 (connection with cost of 0) to a matrix element is different than the uninitialized element (no connection).</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="path-finding"><a class="header" href="#path-finding">Path Finding</a></h1>
+<p>The shortest path-finding algorithm is a well-studied problem. <a href="https://docs.scipy.org/doc/scipy/reference/sparse.csgraph.html#module-scipy.sparse.csgraph">scipy</a> has a few ready-to-use library functions.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="lti-equalization-method"><a class="header" href="#lti-equalization-method">LTI Equalization Method</a></h1>
+<p>Equalization means finding the mapping relationship between a reference signal and the real-time resonance wavelength on a resonator. Only when plotting power vs. wavelength, properties such as the Lorentzian peak shape, FSR, ER and Q are held.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="simplified-heat-transfer-model"><a class="header" href="#simplified-heat-transfer-model">Simplified Heat Transfer Model</a></h1>
+<h2 id="system-block-diagram"><a class="header" href="#system-block-diagram">System Block Diagram</a></h2>
+<p><img src="theory/lti_equalization/./image/system_block_diagram.png" alt="" /></p>
+<h2 id="lti-thermal-system-example-heater-on-chip"><a class="header" href="#lti-thermal-system-example-heater-on-chip">LTI Thermal System Example: Heater on Chip</a></h2>
+<h3 id="assumption"><a class="header" href="#assumption">Assumption</a></h3>
+<p>Heat transfer in this process is 1D pure conduction.</p>
+<h3 id="setup"><a class="header" href="#setup">Setup</a></h3>
+<p><img src="theory/lti_equalization/./image/equalization_stage_tec.png" alt="" /></p>
+<h3 id="heat-circuit"><a class="header" href="#heat-circuit">Heat Circuit</a></h3>
+<p><img src="theory/lti_equalization/./image/heat_circuit.png" alt="" /></p>
+<h3 id="lti-parameters"><a class="header" href="#lti-parameters">LTI Parameters</a></h3>
+<p>The parameters can be measured in either:</p>
+<ul>
+<li>forwardly:
+<ul>
+<li>measure the thermal properties of the thermal mass layers and calculate the thermal resistance/capacitance</li>
+</ul>
+</li>
+<li>reversely:
+<ul>
+<li>by data and observations from preliminary system identification experiments</li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="general-system-block-diagram"><a class="header" href="#general-system-block-diagram">General System Block Diagram</a></h1>
+<p><img src="theory/lti_equalization/./image/general_system_block_diagram.png" alt="" /></p>
+<h2 id="input-regulation"><a class="header" href="#input-regulation">Input Regulation</a></h2>
+<p>This is the frequency-independent part.</p>
+<h3 id="example-thermal-phase-shifter"><a class="header" href="#example-thermal-phase-shifter">Example: Thermal Phase Shifter</a></h3>
+<p>$$
+\lambda_\text{target} = \frac{\text{FSR}}{P_\text{FSR}} \cdot \frac{V^2}{R}
+$$</p>
+<h2 id="partial-lti"><a class="header" href="#partial-lti">Partial LTI</a></h2>
+<p>This is the frequency-dependent part. The LTI there must be with a DC gain of 1.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="equalization-process"><a class="header" href="#equalization-process">Equalization Process</a></h1>
+<h2 id="lti-simulation"><a class="header" href="#lti-simulation">LTI Simulation</a></h2>
+<p>When running the simulation, the simulation time needs to be long enough to reach a steady state. The time to reach stable depends on the LTI property. See <a href="https://drive.google.com/drive/folders/1wUNMpExYhLT4-xerHZTgqAq7uoDlNBt3?usp=drive_link">sample code</a>.</p>
+<p>Take one steady state period output as the converted wavelength for one input signal period.</p>
+<h2 id="interpolation"><a class="header" href="#interpolation">Interpolation</a></h2>
+<p>The converted wavelength will be unevenly spaced. Interpolate to mimic the passive wavelength format (evenly spaced).</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="formatter"><a class="header" href="#formatter">Formatter</a></h1>
+<p>RA-Core follows the <a href="https://black.readthedocs.io/en/stable/">black code formatter</a> default style.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="type-hint"><a class="header" href="#type-hint">Type Hint</a></h1>
+<p>Python <a href="https://peps.python.org/pep-0484/">PEP 484</a></p>
+<p>Use <a href="https://docs.python.org/3/library/typing.html">type hint</a> to improve code readability.</p>
+<p>Type-annotated Python code should look similar to other static-type languages (C/C++, Java, C#, Rust, etc.).</p>
+<h2 id="visual-studio-code-support"><a class="header" href="#visual-studio-code-support">Visual Studio Code Support</a></h2>
+<p><code>settings.json</code></p>
+<pre><code class="language-json">    &quot;python.analysis.typeCheckingMode&quot;: &quot;basic&quot;
+</code></pre>
+<p>Recommend to work with <a href="https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens">Error Lens</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="functional-programming"><a class="header" href="#functional-programming">Functional Programming</a></h1>
+<p>Prerequisite: <a href="https://docs.python.org/3/howto/functional.html"><strong>Functional Programming HOWTO</strong></a></p>
+<h2 id="multiprocessing"><a class="header" href="#multiprocessing">Multiprocessing</a></h2>
+<p>Using functional programming style, it's extremely easy to parallelize your code. Just replace the normal <code>map()</code> by <code>Pool.map()</code> from <a href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.pool.Pool.map">multiprocessing.pool.Pool</a> package.</p>
+<p>There is not a lazy version of <code>starmap()</code>. Mimic this by using <a href="https://docs.python.org/3/library/functools.html#functools.partial"><code>functools.partial()</code></a> in <code>imap()</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="oop"><a class="header" href="#oop">OOP</a></h1>
+<p>Prerequisite: <a href="https://docs.python.org/3/tutorial/classes.html"><strong>Python Class</strong></a></p>
+<p>Below are additional tricks uncovered in the prerequisite read.</p>
+<h2 id="property"><a class="header" href="#property">@property</a></h2>
+<p><a href="https://docs.python.org/3/library/functions.html#property">@property</a></p>
+<p>Property is often used with private variables to have a better OOP encapsulation. Use &quot;getter&quot; and &quot;setter&quot; to ensure the validity of the property.</p>
+<h2 id="abstract-base-class-abc"><a class="header" href="#abstract-base-class-abc"><a href="https://docs.python.org/3/library/abc.html">Abstract Base Class (ABC)</a></a></h2>
+<p>Prerequisite: <a href="https://en.wikipedia.org/wiki/Interface_(object-oriented_programming)">Interface (OOP)</a></p>
+<p>A subclass can implement such interfaces defined in the base class by implementing the abstract methods after inheriting from the base class.</p>
+<p>The base class can provide a default implementation or not.</p>
+<h3 id="abstractmethod"><a class="header" href="#abstractmethod"><a href="https://docs.python.org/3/library/abc.html#abc.abstractmethod"><code>@abstractmethod</code></a></a></h3>
+<p>If the base class has no default implementation, the <code>@abstractmethod</code> can enforce the subclass to implement the method.</p>
+<h3 id="staticmethod"><a class="header" href="#staticmethod"><a href="https://docs.python.org/3/library/functions.html#staticmethod"><code>@staticmethod</code></a></a></h3>
+<p><code>@staticmethod</code> works like a namespace. Static methods neither need to know the class nor an instance. It could be used as an alternative way to initialize a <a href="python_tricks/./dataclass.html">dataclass</a>.</p>
+<h2 id="example-code"><a class="header" href="#example-code">Example Code</a></h2>
+<p>Run the code below and figure out why the error occurs. Open it in an IDE and see the linting.</p>
+<pre><code class="language-python">from abc import ABCMeta, abstractmethod
+
+
+class Shape(metaclass=ABCMeta):
+    @abstractmethod
+    def print_info(self):
+        ...
+
+    @property
+    @abstractmethod
+    def area(self) -&gt; float:
+        ...
+
+    @staticmethod
+    def compare_area(shape1: &quot;Shape&quot;, shape2: &quot;Shape&quot;):
+        if shape1.area &gt; shape2.area:
+            print(
+                f&quot;This {shape1.__class__.__name__} is bigger than that {shape2.__class__.__name__}&quot;
+            )
+        elif shape1.area &lt; shape2.area:
+            print(
+                f&quot;That {shape2.__class__.__name__} is bigger than this {shape1.__class__.__name__}&quot;
+            )
+        else:
+            print(&quot;They are the same size&quot;)
+
+
+class UnknownShape(Shape):
+    def __init__(self):
+        self.__area = None
+
+    def print_info(self):
+        print(f&quot;Unknown Shape with area {self.area}&quot;)
+
+    @property
+    def area(self):
+        return self.__area
+
+    @area.setter
+    def area(self, area: float):
+        if area &lt; 0:
+            raise ValueError(&quot;Area cannot be negative&quot;)
+        else:
+            self.__area = area
+
+
+class Rectangle(Shape):
+    def __init__(self, width: float, height: float):
+        self.__width = width
+        self.__height = height
+
+    def print_info(self):
+        print(f&quot;Rectangle: {self.__width} x {self.__height}&quot;)
+
+    @property
+    def area(self):
+        return self.__width * self.__height
+
+
+class Triangle(Shape):
+    def __init__(self, base: float, height: float):
+        self.__base = base
+        self.__height = height
+
+    def print_info(self):
+        print(f&quot;Triangle: {self.__base} x {self.__height}&quot;)
+
+    @property
+    def area(self):
+        return self.__base * self.__height / 2
+
+
+class Circle(Shape):
+    def __init__(self, radius: float):
+        self.__radius = radius
+
+    def print_info(self):
+        print(f&quot;Circle: {self.__radius}&quot;)
+
+    @property
+    def area(self):
+        return self.__radius * self.__radius * 3.14
+
+
+if __name__ == &quot;__main__&quot;:
+    # inheritance demo
+    shapes: list[Shape] = [
+        Rectangle(2, 3),
+        Triangle(3, 4),
+        Circle(2),
+    ]
+    for shape in shapes:
+        shape.print_info()
+        print(f&quot;Area: {shape.area}&quot;)
+        # shape.area = 0 # Try uncommenting this line
+        # AttributeError: property 'area' of 'Rectangle' object has no setter
+        print(&quot;------&quot;)
+    print()
+
+    # static method
+    print(&quot;-----static method demo-----&quot;)
+    Shape.compare_area(shapes[0], shapes[1])
+    Shape.compare_area(shapes[1], shapes[2])
+    print()
+
+    # property setter demo
+    print(&quot;-----property setter demo-----&quot;)
+    unknown_shape = UnknownShape()
+    if unknown_shape.area is float:
+        print(&quot;This will not be printed because area is None&quot;)
+    unknown_shape.print_info()
+    unknown_shape.area = 100
+    unknown_shape.print_info()
+
+    # validity check by setter:
+    unknown_shape.area = -100  # ValueError: Area cannot be negative
+    unknown_shape.print_info()
+
+    # abstract class demo
+    print(&quot;-----abstract class demo-----&quot;)
+    shape = Shape()  # TypeError: Can't instantiate abstract class...
+
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="dataclass"><a class="header" href="#dataclass">@dataclass</a></h1>
+<p><a href="https://docs.python.org/3/library/dataclasses.html"><code>@dataclass</code></a></p>
+<blockquote>
+<p>Sometimes it is useful to have a data type similar to the Pascal “record” or C “struct”, bundling together a few named data items.</p>
+</blockquote>
+<p>Unlike normal class, it's not convenient to define data class properties as private, as the properties are aimed to be exposed to callers.</p>
+<p>The <a href="https://docs.python.org/3/library/dataclasses.html#frozen-instances"><code>frozen</code></a> parameter can set the data class properties to readonly.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="misc"><a class="header" href="#misc">Misc</a></h1>
+<h2 id="lru_cache"><a class="header" href="#lru_cache"><a href="https://docs.python.org/3/library/functools.html#functools.lru_cache"><code>@lru_cache</code></a></a></h2>
+<p>Use <code>@lru_cache</code> if you have to call a function with the same parameter multiple times, although this calling way should be avoided.</p>
+<h2 id="recommended-visual-studio-code-extensions"><a class="header" href="#recommended-visual-studio-code-extensions">Recommended Visual Studio Code Extensions</a></h2>
+<ul>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring">autoDocString</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter">Black Formatter</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=leodevbro.blockman">Blockman</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens">Error Lens</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=oderwat.indent-rainbow">indent-rainbow</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff">Ruff</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight">TODO Highlight</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="libpy"><a class="header" href="#libpy">lib.py</a></h1>
+<p>Basic shared tools for Lorentzian peak fitting, cosine similarity peak tracking and hough transform peak mapping.</p>
+<h2 id="peak-finding-1"><a class="header" href="#peak-finding-1">Peak Finding</a></h2>
+<p><code>find_peak_and_properties</code> was refactored from the curve fitting section. It applies a Gaussian filter as a preprocessor of the data.</p>
+<h2 id="curve-fitting-2"><a class="header" href="#curve-fitting-2">Curve Fitting</a></h2>
+<h3 id="lorentzianpeakfitresult"><a class="header" href="#lorentzianpeakfitresult"><code>LorentzianPeakFitResult</code></a></h3>
+<p>Stores the results from fitting a single peak.</p>
+<h3 id="sweepfitresult"><a class="header" href="#sweepfitresult"><code>SweepFitResult</code></a></h3>
+<p>Essentially a list of <code>LorentzianPeakFitResult</code>, with constructor from raw data, and helper functions to report results.</p>
+<h2 id="peak-tracking-1"><a class="header" href="#peak-tracking-1">Peak Tracking</a></h2>
+<p><code>peak_to_traces()</code> takes all the peaks in an experiment in ragged array from, and returns a list of trace sections, with one single roughly estimated FSR.</p>
+<h2 id="find-parallel-peaks"><a class="header" href="#find-parallel-peaks">Find Parallel Peaks</a></h2>
+<p><code>group_peaks()</code> takes all the peak central wavelengths in ragged array from, with one full-size overall peak-shift trace. It returns a list of traces, where each trace is a list of ragged array indices.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="passive_toolspy"><a class="header" href="#passive_toolspy">passive_tools.py</a></h1>
+<h2 id="datareaderbase"><a class="header" href="#datareaderbase"><code>DataReaderBase</code></a></h2>
+<p>The abstract class of passive data IO layer. Behaves like a list, where each item is of type <code>tuple[timestamp,wavelength_array,power_2d_array]</code>. It also has an interface to get <code>power_2d_array</code> only, for spectrogram plotting.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="active_toolspy"><a class="header" href="#active_toolspy">active_tools.py</a></h1>
+<h2 id="converterconfig"><a class="header" href="#converterconfig"><code>ConverterConfig</code></a></h2>
+<p>The abstract data type representation of the active converter CSV config file. It has helper functions to convert from/to CSV.</p>
+<h2 id="csvdata"><a class="header" href="#csvdata"><code>CSVData</code></a></h2>
+<p>A data class representing the ramp column and power columns of a CSV data file. The ramp channel can be at any column.</p>
+<h2 id="simplerampcsvreaderbase"><a class="header" href="#simplerampcsvreaderbase"><code>SimpleRampCSVReaderBase</code></a></h2>
+<p>Essentially an iterator return all the data in an active experiment by sweep. The sweeps are sliced from the reference signal (ramp channel). The slicing algorithm should be simple and quick. This is for raw data spectrogram plotting.</p>
+<h2 id="advancedrampcsvreaderbase"><a class="header" href="#advancedrampcsvreaderbase"><code>AdvancedRampCSVReaderBase</code></a></h2>
+<p>Like <code>SimpleRampCSVReaderBase</code>, but slices the sweeps more accurately, using the LTI simulation method.</p>
+<h2 id="generate_sawtooth_from_data"><a class="header" href="#generate_sawtooth_from_data"><code>generate_sawtooth_from_data()</code></a></h2>
+<p>Guess the period and phase of a ramp signal, in terms of sample point, assuming the ramp signal is evenly sampled in time. This is used because there is missing data between CSV files, and CSV files may start from a random place of a period.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="utils"><a class="header" href="#utils">utils</a></h1>
+<p>Simple helper tools.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="ragged_arraypy"><a class="header" href="#ragged_arraypy">ragged_array.py</a></h1>
+<p>Helper class to convert between single-indexing and double-indexing. Used in peak tracking.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="tqdm_qtpy"><a class="header" href="#tqdm_qtpy">tqdm_qt.py</a></h1>
+<p>Hack <a href="https://github.com/tqdm/tqdm">tqdm</a> to let it emit a qt signal.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
+<h2 id="20230831"><a class="header" href="#20230831">20230831</a></h2>
+<p>The first post from <a href="https://github.com/EzekielDaun">Yifei Liu</a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            MathJax.Hub.Register.StartupHook('End', function() {
+                window.setTimeout(window.print, 100);
+            });
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

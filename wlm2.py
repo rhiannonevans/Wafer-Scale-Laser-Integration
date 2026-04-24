@@ -6,6 +6,13 @@ def process_other(file_path_str, LDC, output_folder=None):
     import matplotlib as mpl
     import scipy.io
 
+    # Plot font constants
+    PLOT_FONT_AXIS_LABEL = 18
+    PLOT_FONT_AXIS_TICKS = 18
+    PLOT_FONT_TITLE = 14
+    PLOT_FONT_LEGEND = 16
+    PLOT_FONT_TEXT = 9
+
     # Helper function to generate nicely spaced tick values
     def get_ticks(data, num_ticks, decimal_places):
         ticks = np.linspace(data.min(), data.max(), num_ticks)
@@ -231,14 +238,14 @@ def process_other(file_path_str, LDC, output_folder=None):
         poly3_eq = f"3rd Order: {poly3_coeffs[0]:.3e}x³ + {poly3_coeffs[1]:.3e}x² + {poly3_coeffs[2]:.3e}x + {poly3_coeffs[3]:.3e}"
 
         # Annotate the equations on the plot
-        plt.text(0.05, 0.95, poly2_eq, transform=plt.gca().transAxes, fontsize=12,color='red', verticalalignment='top')
-        plt.text(0.05, 0.90, poly3_eq, transform=plt.gca().transAxes, fontsize=12, color='green', verticalalignment='top')
+        plt.text(0.05, 0.95, poly2_eq, transform=plt.gca().transAxes, fontsize=PLOT_FONT_TEXT, color='red', verticalalignment='top')
+        plt.text(0.05, 0.90, poly3_eq, transform=plt.gca().transAxes, fontsize=PLOT_FONT_TEXT, color='green', verticalalignment='top')
 
         # Add labels, title, and legend
-        plt.xlabel("Current (mA)", fontsize=14)
-        plt.ylabel("Wavelength (nm)", fontsize=14)
-        plt.title("Current vs Wavelength with Best-Fit Lines", fontsize=16)
-        plt.legend(loc='lower right', fontsize=12)
+        plt.xlabel("Current (mA)", fontsize=PLOT_FONT_AXIS_LABEL)
+        plt.ylabel("Wavelength (nm)", fontsize=PLOT_FONT_AXIS_LABEL)
+        plt.title("Current vs Wavelength with Best-Fit Lines", fontsize=PLOT_FONT_TITLE)
+        plt.legend(loc='lower right', fontsize=PLOT_FONT_LEGEND)
         plt.grid(True)
 
         # Save the plot as PNG and SVG
